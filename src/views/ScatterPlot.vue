@@ -1,7 +1,7 @@
 <template>
   <svg
     ref="scatterPlot0"
-    :style="'width: ' + width + 'px height: ' + height + 'px'"
+    :style="'width: ' + width + 'px;height: ' + height + 'px'"
     class="scatterPlot0"
   ></svg>
 </template>
@@ -18,11 +18,11 @@ export default {
   props: {
     width: {
       type: Number,
-      default: 550
+      default: 700
     },
     height: {
       type: Number,
-      default: 500
+      default: 600
     },
     dataList: {
       type: Object,
