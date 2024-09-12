@@ -33,7 +33,7 @@ export default {
         }
       }
     },
-    selectActNode : {
+    selectActNode: {
       type: Object,
       default: () => {
         return []
@@ -62,7 +62,7 @@ export default {
         return pre
       }, {})
       // 去除所有节点和边
-      this.forceSvg.selectAll('*').remove()
+          this.forceSvg.selectAll('*').remove()
       let link = this.forceSvg
         .append('g')
         .selectAll('line')
@@ -73,11 +73,13 @@ export default {
         .attr('x2', (d) => nodeMap[d.target.id].x)
         .attr('y1', (d) => nodeMap[d.source.id].y)
         .attr('y2', (d) => nodeMap[d.target.id].y)
-        .attr('stroke', (d,i)=>this.selectActNode.includes(d.source.id)?'#f00':'#999')
+        .attr('stroke', (d, i) => {
+          return this.selectActNode.includes(Number(d.source.id)) ? '#f00' : '#999'
+        })
         .attr('stroke-width', 1)
         .attr('stroke-opacity', 1)
         .attr('stroke-linecap', 'round')
-        .attr('data-index', (_, i) => `${_.source.id}_${_.target.id}`)
+          .attr('data-index', (_, i) => `${_.source.id}_${_.target.id}`)
       let node = this.forceSvg
         .append('g')
         .selectAll('circle')
@@ -89,9 +91,9 @@ export default {
         .attr('cy', (d) => d.y)
         .attr('r', (d) => 10)
         .attr('fill', (d, i) => colors0(i))
-        .attr('stroke', (d,i)=>this.selectActNode.includes(i)?'#f00':'#fff')
-        .attr('fill-opacity', (d,i)=>{
-          return this.selectActNode.includes(i)?1:0
+        .attr('stroke', (d, i) => (this.selectActNode.includes(Number(d.id)) ? '#f00' : '#fff'))
+        .attr('fill-opacity', (d, i) => {
+          return this.selectActNode.length == 0 ? 1 : this.selectActNode.includes(Number(d.id)) ? 1 : 0.1
         })
         .attr('stroke-opacity', 1)
         .attr('stroke-width', 1.5)
@@ -187,7 +189,6 @@ export default {
         .attr('stroke-opacity', 1)
         .attr('stroke-linecap', 'round')
         .attr('data-index', (_, i) => `${_.source.id}_${_.target.id}`)
-
       let node = this.forceSvg
         .append('g') //画节点
         .selectAll('circle')
@@ -200,7 +201,7 @@ export default {
         .attr('r', (d) => 10)
         .attr('fill', (d, i) => colors0(i))
         .attr('stroke', '#fff')
-        .attr('fill-opacity',1)
+        .attr('fill-opacity', 1)
         .attr('stroke-width', 1.5)
         .attr('data-index', (d) => d.id)
         .on('click', this.handleSimGraphMouseClick)
@@ -233,7 +234,6 @@ export default {
       this.renderForceSvg()
     },
     selectActNode(newVal, oldVal) {
-      console.log(newVal)
       this.renderHistoricalDataset()
     }
   }
