@@ -18,7 +18,7 @@ export default {
   props: {
     width: {
       type: Number,
-      default: 700
+      default: 800
     },
     height: {
       type: Number,
@@ -74,9 +74,11 @@ export default {
         .attr('y1', (d) => nodeMap[d.source.id].y)
         .attr('y2', (d) => nodeMap[d.target.id].y)
         .attr('stroke', (d, i) => {
-          return this.selectActNode.includes(Number(d.source.id)) ? '#f00' : '#999'
+          return this.selectActNode.includes(Number(d.source.id))||this.selectActNode.includes(Number(d.target.id)) ? '#f00' : '#999'
         })
-        .attr('stroke-width', 1)
+        .attr('stroke-width',(d, i) => {
+          return this.selectActNode.includes(Number(d.source.id))||this.selectActNode.includes(Number(d.target.id)) ? 3 : 1
+        })
         .attr('stroke-opacity', 1)
         .attr('stroke-linecap', 'round')
           .attr('data-index', (_, i) => `${_.source.id}_${_.target.id}`)

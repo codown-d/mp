@@ -1,0 +1,61 @@
+<!DOCTYPE html>  
+<html lang="en">  
+<head>  
+    <meta charset="UTF-8">  
+    <title>Dynamic Brushes with Independence</title>  
+    <script src="https://d3js.org/d3.v7.min.js"></script>  
+    <style>  
+        .brush-rect .selection {  
+            fill: #777;  
+            fill-opacity: .3;  
+            stroke: #000;  
+            shape-rendering: crispEdges;  
+        }  
+        .brush-container {  
+            cursor: crosshair;  
+        }  
+    </style>  
+</head>  
+<body>  
+    <svg width="800" height="300"></svg>  
+    <button onclick="addBrush()">Add Brush</button>  
+  
+    <script>  
+        let brushCount = 0;  
+  
+        function addBrush() {  
+            const svg = d3.select("svg");  
+            const brush = d3.brush().on("end", brushed);  
+  
+            // Create a new brush container  
+            const brushContainer = svg.append("g")  
+                .attr("class", `brush-container brush-${brushCount}`)  
+                .attr("transform", `translate(${brushCount * 100}, 0)`);  
+  
+            // Append a rect to the brush container for the brush to work on  
+            brushContainer.append("rect")  
+                .attr("class", "brush-rect")  
+                .attr("width", 100)  
+                .attr("height", 300)  
+                .attr("fill", '#002')  
+                .attr("pointer-events", "all")  
+                .call(brush);  
+  
+            brushCount++;  
+        }  
+  
+        function brushed(event) {  
+            const selection = event.selection;  
+            const brushContainer = d3.select(event.target.parentNode);  
+  
+            if (selection) {  
+                // Optionally, update other parts of your visualization based on the selection  
+                console.log(`Brush Selection:`, selection, `in container`, brushContainer.attr("class"));  
+            }  
+        }  
+  
+        // Optionally, add an initial brush  
+        addBrush();  
+    </script>  
+</body>  
+</html>
