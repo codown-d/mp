@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>D3.js Selection Box Example</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+    body { margin: 0; }
+    svg { position: absolute; top: 0; left: 0; pointer-events: all; }
+    rect { fill: none; stroke: red; stroke-width: 2px; }
+</style>
+</head>
+<body>
+<svg id="drawingArea" width="600" height="400"></svg>
+<script>
+    // 获取SVG元素
+    const svg = d3.select("#drawingArea");
+
+    // 鼠标交互状态
+    let mouseDown = false;
+    let startX, startY;
+
+    // 鼠标按下时开始绘制
+    svg.on("mousedown", function(event) {
+        mouseDown = true;
+        startX = event.x;
+        startY = event.y;
+    });
+
+    // 鼠标移动时更新绘制
+    svg.on("mousemove", function(event) {
+        if (mouseDown) {
+            // 移除旧的临时矩形
+            svg.selectAll(".tempRect").remove();
+
+            // 绘制当前正在拖动的矩形
+            svg.append("rect")
+                .attr("class", "tempRect") // 添加类名以便移除
+                .attr("x", startX)
+                .attr("y", startY)
+                .attr("width", event.x - startX)
+                .attr("height", event.y - startY);
+        }
+    });
+
+    // 鼠标抬起时结束绘制，并保存选区
+    svg.on("mouseup", function(event) {
+        if (!mouseDown) return;
+
+        mouseDown = false;
+
+        // 获取临时矩形的属性
+        const tempRects = svg.selectAll(".tempRect");
+        if (tempRects.size() > 0) {
+            const tempRect = tempRects.nodes()[0];
+            const width = Math.abs(tempRect.getAttribute("width"));
+            const height = Math.abs(tempRect.getAttribute("height"));
+            const x = Math.min(startX, event.x - width);
+            const y = Math.min(startY, event.y - height);
+
+            // 创建新的矩形并替换临时矩形
+            svg.append("rect")
+                .attr("x", x)
+                .attr("y", y)
+                .attr("width", width)
+                .attr("height", height);
+
+            // 移除临时矩形
+            tempRects.remove();
+        }
+    });
+</script>
+</body>
+</html>

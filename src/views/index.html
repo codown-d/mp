@@ -1,61 +1,62 @@
-<!DOCTYPE html>  
-<html lang="en">  
-<head>  
-    <meta charset="UTF-8">  
-    <title>Dynamic Brushes with Independence</title>  
-    <script src="https://d3js.org/d3.v7.min.js"></script>  
-    <style>  
-        .brush-rect .selection {  
-            fill: #777;  
-            fill-opacity: .3;  
-            stroke: #000;  
-            shape-rendering: crispEdges;  
-        }  
-        .brush-container {  
-            cursor: crosshair;  
-        }  
-    </style>  
-</head>  
-<body>  
-    <svg width="800" height="300"></svg>  
-    <button onclick="addBrush()">Add Brush</button>  
-  
-    <script>  
-        let brushCount = 0;  
-  
-        function addBrush() {  
-            const svg = d3.select("svg");  
-            const brush = d3.brush().on("end", brushed);  
-  
-            // Create a new brush container  
-            const brushContainer = svg.append("g")  
-                .attr("class", `brush-container brush-${brushCount}`)  
-                .attr("transform", `translate(${brushCount * 100}, 0)`);  
-  
-            // Append a rect to the brush container for the brush to work on  
-            brushContainer.append("rect")  
-                .attr("class", "brush-rect")  
-                .attr("width", 100)  
-                .attr("height", 300)  
-                .attr("fill", '#002')  
-                .attr("pointer-events", "all")  
-                .call(brush);  
-  
-            brushCount++;  
-        }  
-  
-        function brushed(event) {  
-            const selection = event.selection;  
-            const brushContainer = d3.select(event.target.parentNode);  
-  
-            if (selection) {  
-                // Optionally, update other parts of your visualization based on the selection  
-                console.log(`Brush Selection:`, selection, `in container`, brushContainer.attr("class"));  
-            }  
-        }  
-  
-        // Optionally, add an initial brush  
-        addBrush();  
-    </script>  
-</body>  
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>D3.js Brush Example</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+    body { margin: 0; }
+    svg { position: relative; top: 0; left: 0; }
+    .brush .extent { fill: #ccc; fill-opacity: .125; stroke: #fff; }
+</style>
+</head>
+<body>
+<svg id="drawingArea" width="600" height="400"></svg>
+<script>
+    // 获取SVG元素
+    const svg = d3.select("#drawingArea");
+
+    // 定义brush行为
+    const brush = d3.brush()
+        .on("start", started)
+        .on("brush", brushed)
+        .on("end", ended);
+
+    // 添加brush行为到SVG
+    const gBrush = svg.append("g")
+        .attr("class", "brush")
+        .call(brush);
+
+    // 处理brush开始事件
+    function started(event, d) {
+        if (event.sourceEvent && event.sourceEvent.type === "zoom") {
+            brush.move(gBrush, null); // 刷子被清除
+        }
+    }
+
+    // 处理brush中事件
+    function brushed(event, d) {
+        // 移除之前的刷子矩形
+        svg.select(".brushedRect").remove();
+
+        // 如果有选择区域，则绘制一个矩形来表示
+        if (d) {
+            svg.append("rect")
+                .attr("class", "brushedRect")
+                .attr("x", d.extent[0][0])
+                .attr("y", d.extent[0][1])
+                .attr("width", (d.extent[1][0] - d.extent[0][0]))
+                .attr("height", (d.extent[1][1] - d.extent[0][1]));
+        }
+    }
+
+    // 处理brush结束事件
+    function ended(event, d) {
+        if (!d) {
+            // 如果刷子被清除，则移除之前绘制的矩形
+            svg.select(".brushedRect").remove();
+        }
+    }
+</script>
+</body>
 </html>
