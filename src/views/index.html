@@ -1,62 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>D3.js Brush Example</title>
-<script src="https://d3js.org/d3.v7.min.js"></script>
-<style>
-    body { margin: 0; }
-    svg { position: relative; top: 0; left: 0; }
-    .brush .extent { fill: #ccc; fill-opacity: .125; stroke: #fff; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3 Two Group Scatter Plot with Brushes</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .brush .selection {
+            fill: steelblue;
+            fill-opacity: 0.3;
+        }
+        .axis path,
+        .axis line {
+            fill: none;
+            shape-rendering: crispEdges;
+        }
+    </style>
 </head>
 <body>
-<svg id="drawingArea" width="600" height="400"></svg>
-<script>
-    // 获取SVG元素
-    const svg = d3.select("#drawingArea");
+    <svg width="800" height="400"></svg>
+    <script>
+        const svg = d3.select("svg");
+        const margin = { top: 20, right: 30, bottom: 30, left: 40 };
+        const width = +svg.attr("width") - margin.left - margin.right;
+        const height = +svg.attr("height") - margin.top - margin.bottom;
 
-    // 定义brush行为
-    const brush = d3.brush()
-        .on("start", started)
-        .on("brush", brushed)
-        .on("end", ended);
+        const xScale = d3.scaleLinear().domain([0, 100]).range([0, width]);
+        const yScale = d3.scaleLinear().domain([0, 100]).range([height, 0]);
 
-    // 添加brush行为到SVG
-    const gBrush = svg.append("g")
-        .attr("class", "brush")
-        .call(brush);
+        const xAxis = d3.axisBottom(xScale);
+        const yAxis = d3.axisLeft(yScale);
 
-    // 处理brush开始事件
-    function started(event, d) {
-        if (event.sourceEvent && event.sourceEvent.type === "zoom") {
-            brush.move(gBrush, null); // 刷子被清除
+        const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+        g.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`).call(xAxis);
+        g.append("g").attr("class", "y-axis").call(yAxis);
+
+        // 生成两组数据
+        const group1 = d3.range(50).map(() => ({ x: Math.random() * 100, y: Math.random() * 100 }));
+        const group2 = d3.range(50).map(() => ({ x: Math.random() * 100, y: Math.random() * 100 }));
+
+        // 绘制第一组数据
+        g.selectAll(".group1")
+            .data(group1)
+            .enter().append("circle")
+            .attr("class", "group1")
+            .attr("cx", d => xScale(d.x))
+            .attr("cy", d => yScale(d.y))
+            .attr("r", 5)
+            .style("fill", "orange");
+
+        // 绘制第二组数据
+        g.selectAll(".group2")
+            .data(group2)
+            .enter().append("circle")
+            .attr("class", "group2")
+            .attr("cx", d => xScale(d.x))
+            .attr("cy", d => yScale(d.y))
+            .attr("r", 5)
+            .style("fill", "green");
+
+        // 创建第一个 brush
+        const brush1 = d3.brush()
+            .extent([[0, 0], [width, height]])
+            .on("brush end", brushed1);
+
+        g.append("g")
+            .attr("class", "brush brush1")
+            .call(brush1);
+
+        // 创建第二个 brush
+        const brush2 = d3.brush()
+            .extent([[0, 0], [width, height]])
+            .on("brush end", brushed2);
+
+        g.append("g")
+            .attr("class", "brush brush2")
+            .call(brush2);
+
+        function brushed1(event) {
+            const selection = event.selection;
+            if (selection) {
+                const [[x0, y0], [x1, y1]] = selection;
+
+                // 获取在选区内的节点
+                const selectedCircles = g.selectAll(".group1").filter(function(d) {
+                    const cx = xScale(d.x);
+                    const cy = yScale(d.y);
+                    return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1;
+                });
+
+                console.log("Brush 1 selected circles:", selectedCircles.size());
+            }
         }
-    }
 
-    // 处理brush中事件
-    function brushed(event, d) {
-        // 移除之前的刷子矩形
-        svg.select(".brushedRect").remove();
+        function brushed2(event) {
+            const selection = event.selection;
+            if (selection) {
+                const [[x0, y0], [x1, y1]] = selection;
 
-        // 如果有选择区域，则绘制一个矩形来表示
-        if (d) {
-            svg.append("rect")
-                .attr("class", "brushedRect")
-                .attr("x", d.extent[0][0])
-                .attr("y", d.extent[0][1])
-                .attr("width", (d.extent[1][0] - d.extent[0][0]))
-                .attr("height", (d.extent[1][1] - d.extent[0][1]));
+                // 获取在选区内的节点
+                const selectedCircles = g.selectAll(".group2").filter(function(d) {
+                    const cx = xScale(d.x);
+                    const cy = yScale(d.y);
+                    return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1;
+                });
+
+                console.log("Brush 2 selected circles:", selectedCircles.size());
+            }
         }
-    }
 
-    // 处理brush结束事件
-    function ended(event, d) {
-        if (!d) {
-            // 如果刷子被清除，则移除之前绘制的矩形
-            svg.select(".brushedRect").remove();
-        }
-    }
-</script>
+        // 处理 brush 之间的相互影响
+        d3.selectAll(".brush").on("mousedown", function() {
+            d3.selectAll(".brush").call(brush1.move, null);
+            d3.selectAll(".brush").call(brush2.move, null);
+        });
+    </script>
 </body>
 </html>

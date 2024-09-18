@@ -509,51 +509,31 @@ export default {
           })
           .on('end', (event) => {
             const selection = event.selection
-            const [[x0, y0], [x1, y1]] = selection
+            const [[x0, y0], [x1, y1]] = selection;
             console.log(selection)
-            let result = [scatter1Group.selectAll('circle'), scatter2Group.selectAll('circle')].map(
-              (items, index) => {
-                return items
-                  .classed('un-highlight', true)
-                  .classed('highlight', false)
-                  .filter(function (d, i) {
-                    const dot = d3.select(this)
-                    const cx = +dot.attr('cx') + (index == 1 ? width + margin.left : 0) // 获取cx属性值
-                    const cy = +dot.attr('cy') // 获取cy属性值
-                    return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1
-                  })
-                  .classed('un-highlight', false)
-                  .classed('highlight', true)
-              }
-            )
-            result.forEach((item, index) => {
+            let result = [
+              scatter1Group.selectAll('circle'), scatter2Group.selectAll('circle')
+            ].map((items, index) => {
+              return items
+                .classed('un-highlight', true)
+                .classed('highlight', false)
+                .filter(function (d, i) {
+                  const dot = d3.select(this)
+                  const cx = +dot.attr('cx') + (index == 1 ? width + margin.left : 0) // 获取cx属性值
+                  const cy = +dot.attr('cy') // 获取cy属性值
+                  return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1
+                })
+                .classed('un-highlight', false)
+                .classed('highlight', true)
+            })
+            result.forEach((item) => {
               let nodes = item.nodes()
               if (nodes.length > 0) {
-                this.brushList.push({
-                  type: index,
-                  dataIndex: nodes.map((item) => d3.select(item).attr('data-index')),
-                  nodes: nodes
-                })
+                this.brushList.push(nodes.map(item => d3.select(item).attr('data-index')))
               }
             })
-            this.brushList.forEach((item) => {
-              const node1X = xScale1(scatter1[i].x)
-              const node1Y = yScale1(scatter1[i].y)
 
-              const node2X = xScale2(scatter2[i].x)
-              const node2Y = yScale2(scatter2[i].y)
-              let gPath = svg.append('g').attr('class', 'path-line')
-              gPath
-                .append('line')
-                .attr('class', 'connecting-line')
-                .attr('x1', node1X + margin.left)
-                .attr('y1', node1Y + margin.top)
-                .attr('x2', node2X + margin.left + width + margin.right + 50)
-                .attr('y2', node2Y + margin.top)
-                .style('stroke', 'gray')
-                .style('stroke-width', 0.5)
-            })
-            console.log(this.brushList)
+console.log(this.brushList)
           })
         scatter1Group.append('g').call(brushIns)
       }
@@ -799,10 +779,10 @@ svg {
 }
 
 .un-highlight {
-  fill-opacity: 0.1;
+  fill-opacity: 0.1
 }
 
 .highlight {
-  fill-opacity: 1;
+  fill-opacity: 1
 }
 </style>

@@ -1,74 +1,118 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>D3.js Selection Box Example</title>
-<script src="https://d3js.org/d3.v7.min.js"></script>
-<style>
-    body { margin: 0; }
-    svg { position: absolute; top: 0; left: 0; pointer-events: all; }
-    rect { fill: none; stroke: red; stroke-width: 2px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3 Two Group Scatter Plots with Brushes</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .brush .selection {
+            fill: steelblue;
+            fill-opacity: 0.3;
+        }
+        .axis path,
+        .axis line {
+            fill: none;
+            shape-rendering: crispEdges;
+        }
+    </style>
 </head>
 <body>
-<svg id="drawingArea" width="600" height="400"></svg>
-<script>
-    // 获取SVG元素
-    const svg = d3.select("#drawingArea");
+    <svg width="800" height="400"></svg>
+    <script>
+        const svg = d3.select("svg");
+        const margin = { top: 20, right: 30, bottom: 30, left: 40 };
+        const width = +svg.attr("width") - margin.left - margin.right;
+        const height = +svg.attr("height") - margin.top - margin.bottom;
 
-    // 鼠标交互状态
-    let mouseDown = false;
-    let startX, startY;
+        const xScale = d3.scaleLinear().domain([0, 100]).range([0, width]);
+        const yScale1 = d3.scaleLinear().domain([0, 100]).range([height / 2, 0]); // 上半部分
+        const yScale2 = d3.scaleLinear().domain([0, 100]).range([height, height / 2]); // 下半部分
 
-    // 鼠标按下时开始绘制
-    svg.on("mousedown", function(event) {
-        mouseDown = true;
-        startX = event.x;
-        startY = event.y;
-    });
+        const xAxis = d3.axisBottom(xScale);
+        const yAxis1 = d3.axisLeft(yScale1);
+        const yAxis2 = d3.axisLeft(yScale2);
 
-    // 鼠标移动时更新绘制
-    svg.on("mousemove", function(event) {
-        if (mouseDown) {
-            // 移除旧的临时矩形
-            svg.selectAll(".tempRect").remove();
+        const g1 = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+        g1.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height / 2})`).call(xAxis);
+        g1.append("g").attr("class", "y-axis").call(yAxis1);
 
-            // 绘制当前正在拖动的矩形
-            svg.append("rect")
-                .attr("class", "tempRect") // 添加类名以便移除
-                .attr("x", startX)
-                .attr("y", startY)
-                .attr("width", event.x - startX)
-                .attr("height", event.y - startY);
+        const g2 = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+        g2.attr("transform", `translate(${margin.left},${height / 2 + margin.top})`);
+        g2.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height / 2})`).call(xAxis);
+        g2.append("g").attr("class", "y-axis").call(yAxis2);
+
+        // 生成两组数据
+        const group1 = d3.range(50).map(() => ({ x: Math.random() * 100, y: Math.random() * 100 }));
+        const group2 = d3.range(50).map(() => ({ x: Math.random() * 100, y: Math.random() * 100 }));
+
+        // 绘制第一组数据
+        g1.selectAll(".circle1")
+            .data(group1)
+            .enter().append("circle")
+            .attr("class", "circle1")
+            .attr("cx", d => xScale(d.x))
+            .attr("cy", d => yScale1(d.y))
+            .attr("r", 5);
+
+        // 绘制第二组数据
+        g2.selectAll(".circle2")
+            .data(group2)
+            .enter().append("circle")
+            .attr("class", "circle2")
+            .attr("cx", d => xScale(d.x))
+            .attr("cy", d => yScale2(d.y))
+            .attr("r", 5);
+
+        // 创建第一个 brush
+        const brush1 = d3.brush()
+            .extent([[0, 0], [width, height / 2]])
+            .on("brush end", brushed1);
+
+        g1.append("g")
+            .attr("class", "brush brush1")
+            .call(brush1);
+
+        // 创建第二个 brush
+        const brush2 = d3.brush()
+            .extent([[0, 0], [width, height / 2]])
+            .on("brush end", brushed2);
+
+        g2.append("g")
+            .attr("class", "brush brush2")
+            .call(brush2);
+
+        function brushed1(event) {
+            const selection = event.selection;
+            if (selection) {
+                const [[x0, y0], [x1, y1]] = selection;
+
+                // 获取在选区内的节点
+                const selectedCircles = g1.selectAll(".circle1").filter(function(d) {
+                    const cx = xScale(d.x);
+                    const cy = yScale1(d.y);
+                    return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1;
+                });
+
+                console.log("Brush 1 selected circles:", selectedCircles.size());
+            }
         }
-    });
 
-    // 鼠标抬起时结束绘制，并保存选区
-    svg.on("mouseup", function(event) {
-        if (!mouseDown) return;
+        function brushed2(event) {
+            const selection = event.selection;
+            if (selection) {
+                const [[x0, y0], [x1, y1]] = selection;
 
-        mouseDown = false;
+                // 获取在选区内的节点
+                const selectedCircles = g2.selectAll(".circle2").filter(function(d) {
+                    const cx = xScale(d.x);
+                    const cy = yScale2(d.y);
+                    return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1;
+                });
 
-        // 获取临时矩形的属性
-        const tempRects = svg.selectAll(".tempRect");
-        if (tempRects.size() > 0) {
-            const tempRect = tempRects.nodes()[0];
-            const width = Math.abs(tempRect.getAttribute("width"));
-            const height = Math.abs(tempRect.getAttribute("height"));
-            const x = Math.min(startX, event.x - width);
-            const y = Math.min(startY, event.y - height);
-
-            // 创建新的矩形并替换临时矩形
-            svg.append("rect")
-                .attr("x", x)
-                .attr("y", y)
-                .attr("width", width)
-                .attr("height", height);
-
-            // 移除临时矩形
-            tempRects.remove();
+                console.log("Brush 2 selected circles:", selectedCircles.size());
+            }
         }
-    });
-</script>
+    </script>
 </body>
 </html>
