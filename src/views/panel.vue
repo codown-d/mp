@@ -55,14 +55,24 @@
 
       <div style="width: 270px; margin-top: 10px">
         <!--        <v-btn @click="get_lns">确定</v-btn>-->
-        <v-btn @click="requestForceGraphData" style="margin-right: 10px; width: 120px">更新数据集</v-btn>
-        <v-btn @click="renderHistoricalDataset" v-if="nodesStorage['nodes']" style="width: 120px">历史数据集</v-btn>
+        <v-btn @click="requestForceGraphData" style="margin-right: 10px; width: 120px"
+          >更新数据集</v-btn
+        >
+        <v-btn @click="renderHistoricalDataset" v-if="nodesStorage['nodes']" style="width: 120px"
+          >历史数据集</v-btn
+        >
       </div>
 
       <v-card style="width: 270px; height: 200px; margin-top: 10px">
         <p style="margin-top: 5px; margin-left: 15px">LNS Distribution:</p>
 
-        <svg ref="chartContainer" width="250" height="160" style="margin-left: 10px" class="chartContainer"></svg>
+        <svg
+          ref="chartContainer"
+          width="250"
+          height="160"
+          style="margin-left: 10px"
+          class="chartContainer"
+        ></svg>
       </v-card>
       <v-card style="width: 270px; height: 170px; margin-top: 10px">
         <p style="margin-top: 5px; margin-left: 15px">Average Density:</p>
@@ -81,19 +91,39 @@
           </v-btn-toggle>
         </v-col>
         <div style="display: flex">
-          <v-btn @click="this.clickDraw" style="margin-left: 10px; margin-right: 20px; margin-top: 10px">reset</v-btn>
-          <v-switch label="brush" v-model="brush" style="margin: 0; padding: 0" @click="this.brushDraw"></v-switch>
+          <v-btn
+            @click="this.clickDraw"
+            style="margin-left: 10px; margin-right: 20px; margin-top: 10px"
+            >reset</v-btn
+          >
+          <v-switch
+            label="brush"
+            v-model="brush"
+            style="margin: 0; padding: 0"
+            @click="this.brushDraw"
+          ></v-switch>
         </div>
       </div>
 
       <div>
         <div style="width: 100%">
-          <scatter-plot ref="childComponent1" :selectActNode="selectActNode1" :dataList="dataList" :width="scatterPlotW"
-            :height="0.7 * scatterPlotW" @click-node="(data) => clickNode(data)"></scatter-plot>
+          <scatter-plot
+            ref="childComponent1"
+            :brushList="brushList"
+            :dataList="dataList"
+            :width="scatterPlotW"
+            :height="0.7 * scatterPlotW"
+            @click-node="(data) => clickNode(data)"
+          ></scatter-plot>
         </div>
         <div style="width: 50%" v-if="false">
-          <scatter-plot ref="childComponent2" v-if="false" :selectActNode="selectActNode2" :dataList="dataList"
-            @click-node="(data) => clickNode(data)"></scatter-plot>
+          <scatter-plot
+            ref="childComponent2"
+            v-if="false"
+            :selectActNode="selectActNode2"
+            :dataList="dataList"
+            @click-node="(data) => clickNode(data)"
+          ></scatter-plot>
         </div>
       </div>
       <svg ref="scatterPlot" style="height: 450px" class="scatterPlot"></svg>
@@ -166,7 +196,7 @@ export default {
       brushList: []
     }
   },
-  mounted() { },
+  mounted() {},
   methods: {
     renderHistoricalDataset() {
       this.$refs.childComponent1.renderHistoricalDataset()
@@ -407,7 +437,7 @@ export default {
           }
         })
       let sg2 = scatter2Group
-        .selectAll('.dot')
+        .selectAll('circle.scatter2')
         .data(scatter2)
         .enter()
         .append('circle')
@@ -444,6 +474,7 @@ export default {
       }
 
       function handleMouseOver() {
+        console.log(this)
         const i = d3.select(this).attr('data-index')
         const node1X = xScale1(scatter1[i].x)
         const node1Y = yScale1(scatter1[i].y)
@@ -494,7 +525,6 @@ export default {
       }
 
       if (sf.brush === true) {
-        let collected = []
         let brushIns = d3
           .brush()
           .extent([
@@ -505,7 +535,6 @@ export default {
             if (this.brushList.length == 2) {
               this.brushList.shift()
             }
-            collected = []
           })
           .on('end', (event) => {
             const selection = event.selection
@@ -513,45 +542,59 @@ export default {
             console.log(selection)
             let result = [scatter1Group.selectAll('circle'), scatter2Group.selectAll('circle')].map(
               (items, index) => {
-                return items
-                  .classed('un-highlight', true)
-                  .classed('highlight', false)
-                  .filter(function (d, i) {
-                    const dot = d3.select(this)
-                    const cx = +dot.attr('cx') + (index == 1 ? width + margin.left : 0) // 获取cx属性值
-                    const cy = +dot.attr('cy') // 获取cy属性值
-                    return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1
-                  })
-                  .classed('un-highlight', false)
-                  .classed('highlight', true)
+                return (
+                  items
+                    //   .classed('un-highlight', true)
+                    //   .classed('highlight', false)
+                    .filter(function (d, i) {
+                      const dot = d3.select(this)
+                      const cx = +dot.attr('cx') + (index == 1 ? width + margin.left : 0) // 获取cx属性值
+                      const cy = +dot.attr('cy') // 获取cy属性值
+                      return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1
+                    })
+                )
+                //   .classed('un-highlight', false)
+                //   .classed('highlight', true)
               }
             )
+           
             result.forEach((item, index) => {
               let nodes = item.nodes()
               if (nodes.length > 0) {
+                let arr = nodes.map((item) => d3.select(item).attr('data-index')).map(item=>Number(item))
                 this.brushList.push({
                   type: index,
-                  dataIndex: nodes.map((item) => d3.select(item).attr('data-index')),
+                  dataIndex: arr,
                   nodes: nodes
                 })
               }
             })
+              let dataIndex = this.brushList.reduce((pre, item) => {
+                return pre.concat(item.dataIndex)
+               },[])
+            ;[scatter1Group.selectAll('circle'), scatter2Group.selectAll('circle')].map((item) => {
+                item.classed('un-highlight', true).classed('highlight', (d,i) => {
+                    return dataIndex.includes(i)
+                })
+            })
+            d3.select(this.$refs.scatterPlot).selectAll('g.path-line').remove()
             this.brushList.forEach((item) => {
-              const node1X = xScale1(scatter1[i].x)
-              const node1Y = yScale1(scatter1[i].y)
-
-              const node2X = xScale2(scatter2[i].x)
-              const node2Y = yScale2(scatter2[i].y)
               let gPath = svg.append('g').attr('class', 'path-line')
-              gPath
-                .append('line')
-                .attr('class', 'connecting-line')
-                .attr('x1', node1X + margin.left)
-                .attr('y1', node1Y + margin.top)
-                .attr('x2', node2X + margin.left + width + margin.right + 50)
-                .attr('y2', node2Y + margin.top)
-                .style('stroke', 'gray')
-                .style('stroke-width', 0.5)
+              item.dataIndex.forEach((ite) => {
+                const node1X = xScale1(scatter1[ite].x)
+                const node1Y = yScale1(scatter1[ite].y)
+                const node2X = xScale2(scatter2[ite].x)
+                const node2Y = yScale2(scatter2[ite].y)
+                gPath
+                  .append('line')
+                  .attr('class', 'connecting-line')
+                  .attr('x1', node1X + margin.left)
+                  .attr('y1', node1Y + margin.top)
+                  .attr('x2', node2X + margin.left + width + margin.right)
+                  .attr('y2', node2Y + margin.top)
+                  .style('stroke', 'gray')
+                  .style('stroke-width', 1)
+              })
             })
             console.log(this.brushList)
           })
