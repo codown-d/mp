@@ -119,7 +119,7 @@ import UploadFile from '@/views/UploadFile.vue'
 import { Slider } from 'ant-design-vue'
 import Papa from 'papaparse'
 import dataList from '@/views/data.js'
-import ScatterPlot from './ScatterPlot.vue'
+import ScatterPlot from './ChartPlot.vue'
 
 export default {
   components: { 'a-slider': Slider, UploadFile, 'scatter-plot': ScatterPlot },

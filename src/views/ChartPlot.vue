@@ -56,6 +56,15 @@ export default {
     this.initForceSvg()
   },
   methods: {
+    retColor(i) {
+      if (this.type[0].includes(Number(i))) {
+        return '#f00'
+      } else if (this.type[1].includes(Number(i))) {
+        return '#0f0'
+      } else {
+        return  '#fff'
+      }
+    },
     renderHistoricalDataset() {
       const colors0 = d3.scaleOrdinal(d3.schemeAccent)
       let { links, nodes } = this.nodesStorage
@@ -100,19 +109,16 @@ export default {
         .attr('cx', (d) => d.x)
         .attr('cy', (d) => d.y)
         .attr('r', (d) => 10)
-          .attr('fill', (d, i) => {
-          if (this.type[0].includes(Number(i))) {
-            console.log(this.type)
-            return '#ff000'
-          } else if (this.type[1].includes(Number(i))) {
-            console.log(this.type)
-            return '#00ff00'
-          } else {
-            
-          return colors0(i)
-          }
-        })
-        .attr('stroke', (d, i) => (this.selectActNode.includes(Number(d.id)) ? '#f00' : '#fff'))
+        .attr('fill', (d, i) => {
+          if (this.type[0].includes(Number(d.id))) {
+        return '#f00'
+      } else if (this.type[1].includes(Number(d.id))) {
+        return '#0f0'
+      } else {
+        return colors0(i)
+      }
+        })        
+        .attr('stroke', (d, i) => (this.selectActNode.includes(Number(d.id)) ? '#fff' : '#fff'))
         .attr('fill-opacity', (d, i) => {
           return this.selectActNode.length == 0
             ? 1
@@ -224,18 +230,7 @@ export default {
         .attr('cx', (d) => d.x)
         .attr('cy', (d) => d.y)
         .attr('r', (d) => 10)
-        //   .attr('fill', (d, i) => colors0(i))
-          .attr('fill', (d, i) => {
-            console.log(123)
-          if (this.type[0].includes(Number(i))) {
-            return '#F00'
-          } else if (this.type[1].includes(Number(i))) {
-            return '#0F0'
-          } else {
-            
-          return colors0(i)
-          }
-        })
+        .attr('fill', (d, i) => colors0(i))
         .attr('stroke', '#fff')
         .attr('fill-opacity', 1)
         .attr('stroke-width', 1.5)
@@ -266,7 +261,7 @@ export default {
   watch: {
     brushList: {
       handler(newVal, oldVal) {
-        console.log(newVal)
+        //newVal=[ [],[] ]
         this.selectActNode = newVal.reduce((pre, item, index) => {
           this.type[index] = item.dataIndex
           return pre.concat(item.dataIndex)
@@ -279,8 +274,7 @@ export default {
       this.allEdges = newVal.edges
       this.renderForceSvg()
     },
-      selectActNode(newVal, oldVal) {
-        console.log(123)
+    selectActNode(newVal, oldVal) {
       this.renderHistoricalDataset()
     }
   }

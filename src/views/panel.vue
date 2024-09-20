@@ -62,6 +62,10 @@
           >历史数据集</v-btn
         >
       </div>
+      <div style="margin-top: 10px">
+        <v-btn @click="clearBrush(0)" style="margin-right: 10px; width: 120px">清除brush1</v-btn>
+        <v-btn @click="clearBrush(1)" style="margin-right: 10px; width: 120px">清除brush2</v-btn>
+      </div>
 
       <v-card style="width: 270px; height: 200px; margin-top: 10px">
         <p style="margin-top: 5px; margin-left: 15px">LNS Distribution:</p>
@@ -100,30 +104,30 @@
             label="brush"
             v-model="brush"
             style="margin: 0; padding: 0"
-            @click="this.brushDraw"
+            @click="brushInit"
           ></v-switch>
         </div>
       </div>
 
       <div>
         <div style="width: 100%">
-          <scatter-plot
+          <chart-plot
             ref="childComponent1"
             :brushList="brushList"
             :dataList="dataList"
             :width="scatterPlotW"
-            :height="0.7 * scatterPlotW"
+            :height="0.5 * scatterPlotW"
             @click-node="(data) => clickNode(data)"
-          ></scatter-plot>
+          ></chart-plot>
         </div>
         <div style="width: 50%" v-if="false">
-          <scatter-plot
+          <chart-plot
             ref="childComponent2"
             v-if="false"
             :selectActNode="selectActNode2"
             :dataList="dataList"
             @click-node="(data) => clickNode(data)"
-          ></scatter-plot>
+          ></chart-plot>
         </div>
       </div>
       <svg ref="scatterPlot" style="height: 450px" class="scatterPlot"></svg>
@@ -149,10 +153,10 @@ import UploadFile from '@/views/UploadFile.vue'
 import { Slider } from 'ant-design-vue'
 import Papa from 'papaparse'
 import dataList from '@/views/data.js'
-import ScatterPlot from './ScatterPlot.vue'
+import ChartPlot from './ChartPlot.vue'
 
 export default {
-  components: { 'a-slider': Slider, UploadFile, 'scatter-plot': ScatterPlot },
+  components: { 'a-slider': Slider, UploadFile, 'chart-plot': ChartPlot },
   data() {
     return {
       forceChart: null,
@@ -193,27 +197,46 @@ export default {
       graph0Initialized: false,
       nodesStorage: JSON.parse(window.localStorage.getItem('nodesStorage') || '{}'),
       scatterPlotW: document.body.clientWidth - 350,
-      brushList: []
+      brushList: [],
+      brushSvg:null,
+      xScale1:null,
+      yScale1:null,
+      xScale2:null,
+      yScale2:null,
+      margin:{}
     }
   },
   mounted() {},
   methods: {
+    brushInit(){
+      this.brushList=[]
+      this.brushDraw()
+    },
+    clearBrush(n) {
+      if ((n == 0)) {
+        this.brushList.shift()
+      } else {
+        this.brushList.pop()
+      }
+      
+      this.renderBrush()
+    },
     renderHistoricalDataset() {
       this.$refs.childComponent1.renderHistoricalDataset()
       //   this.$refs.childComponent2.renderHistoricalDataset()
     },
     get_lns() {
-      // this.$axios.post('/userapi/get_lns/', {
-      //   "k": this.value,
-      //   "distance": this.distance,
-      //   "from": this.sliderValues[0],
-      //   "to": this.sliderValues[1],
-      //   "epoch1": this.epoch1,
-      //   "epoch2": this.epoch2,
-      //   "layer1": this.layer1,
-      //   "layer2": this.layer2,
-      // }).then((response) => {
-      let response = dataList
+      this.$axios.post('/userapi/get_lns/', {
+        "k": this.value,
+        "distance": this.distance,
+        "from": this.sliderValues[0],
+        "to": this.sliderValues[1],
+        "epoch1": this.epoch1,
+        "epoch2": this.epoch2,
+        "layer1": this.layer1,
+        "layer2": this.layer2,
+      }).then((response) => {
+      // let response = dataList
       d3.select(this.$refs.scatterPlot).selectAll('*').remove()
       d3.select(this.$refs.chartContainer).selectAll('*').remove()
       d3.select(this.$refs.features1).selectAll('*').remove()
@@ -228,15 +251,14 @@ export default {
       this.density2 = response.data.density2
       this.click_id = -1
 
-      this.dataList = response.data
+      // this.dataList = response.data
 
       this.drawChart()
       this.drawHistogram()
-      // })
+      })
     },
     //点击单个节点，淡化其它节点
     click_node() {
-      console.log('click_node: ', this.click_id)
       this.$axios
         .post('/userapi/click_node/', {
           id: this.click_id,
@@ -345,6 +367,7 @@ export default {
       const width = 500
       const height = 400
       const margin = { top: 20, right: 40, bottom: 20, left: 40 }
+      this.margin=margin
       const svgWidth = (width + margin.left) * 2 + margin.right
       const svgHeight = height
       const max = Math.max(
@@ -355,15 +378,14 @@ export default {
         Math.min(...scatter1.map((item) => item.x)),
         Math.min(...scatter1.map((item) => item.y))
       )
-      console.log(max)
       // 创建颜色比例尺
       const labScale = d3.scaleLinear().domain([min, max]).range([-160, 160])
       // 创建SVG元素
-      const svg = d3
+      let svg = d3
         .select(this.$refs.scatterPlot)
         .attr('width', svgWidth)
         .attr('height', svgHeight)
-
+        this.brushSvg = svg
       const colors = d3.scaleOrdinal(d3.schemeAccent)
       // 创建散点图1的分组
       const scatter1Group = svg
@@ -380,20 +402,25 @@ export default {
         .scaleLinear()
         .domain(d3.extent(scatter1, (d) => d.x))
         .range([0, width])
+      
+        this.xScale1=xScale1
       const xScale2 = d3
         .scaleLinear()
         .domain(d3.extent(scatter2, (d) => d.x))
         .range([0, width])
 
+        this.xScale2=xScale2
       // 创建y轴的比例尺（散点图1）
       const yScale1 = d3
         .scaleLinear()
         .domain(d3.extent(scatter1, (d) => d.y))
         .range([height, 0])
+        this.yScale1=yScale1
       const yScale2 = d3
         .scaleLinear()
         .domain(d3.extent(scatter2, (d) => d.y))
         .range([height, 0])
+        this.yScale2=yScale2
 
       // 创建x轴（散点图1）
       scatter1Group
@@ -474,7 +501,6 @@ export default {
       }
 
       function handleMouseOver() {
-        console.log(this)
         const i = d3.select(this).attr('data-index')
         const node1X = xScale1(scatter1[i].x)
         const node1Y = yScale1(scatter1[i].y)
@@ -539,29 +565,23 @@ export default {
           .on('end', (event) => {
             const selection = event.selection
             const [[x0, y0], [x1, y1]] = selection
-            console.log(selection)
             let result = [scatter1Group.selectAll('circle'), scatter2Group.selectAll('circle')].map(
               (items, index) => {
-                return (
-                  items
-                    //   .classed('un-highlight', true)
-                    //   .classed('highlight', false)
-                    .filter(function (d, i) {
-                      const dot = d3.select(this)
-                      const cx = +dot.attr('cx') + (index == 1 ? width + margin.left : 0) // 获取cx属性值
-                      const cy = +dot.attr('cy') // 获取cy属性值
-                      return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1
-                    })
-                )
-                //   .classed('un-highlight', false)
-                //   .classed('highlight', true)
+                return items.filter(function (d, i) {
+                  const dot = d3.select(this)
+                  const cx = +dot.attr('cx') + (index == 1 ? width + margin.left : 0) // 获取cx属性值
+                  const cy = +dot.attr('cy') // 获取cy属性值
+                  return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1
+                })
               }
             )
-           
+            //[[],[]]
             result.forEach((item, index) => {
               let nodes = item.nodes()
               if (nodes.length > 0) {
-                let arr = nodes.map((item) => d3.select(item).attr('data-index')).map(item=>Number(item))
+                let arr = nodes
+                  .map((item) => d3.select(item).attr('data-index'))
+                  .map((item) => Number(item))
                 this.brushList.push({
                   type: index,
                   dataIndex: arr,
@@ -569,39 +589,42 @@ export default {
                 })
               }
             })
-              let dataIndex = this.brushList.reduce((pre, item) => {
-                return pre.concat(item.dataIndex)
-               },[])
-            ;[scatter1Group.selectAll('circle'), scatter2Group.selectAll('circle')].map((item) => {
-                item.classed('un-highlight', true).classed('highlight', (d,i) => {
-                    return dataIndex.includes(i)
-                })
-            })
-            d3.select(this.$refs.scatterPlot).selectAll('g.path-line').remove()
-            this.brushList.forEach((item) => {
-              let gPath = svg.append('g').attr('class', 'path-line')
-              item.dataIndex.forEach((ite) => {
-                const node1X = xScale1(scatter1[ite].x)
-                const node1Y = yScale1(scatter1[ite].y)
-                const node2X = xScale2(scatter2[ite].x)
-                const node2Y = yScale2(scatter2[ite].y)
-                gPath
-                  .append('line')
-                  .attr('class', 'connecting-line')
-                  .attr('x1', node1X + margin.left)
-                  .attr('y1', node1Y + margin.top)
-                  .attr('x2', node2X + margin.left + width + margin.right)
-                  .attr('y2', node2Y + margin.top)
-                  .style('stroke', 'gray')
-                  .style('stroke-width', 1)
-              })
-            })
-            console.log(this.brushList)
+            this.renderBrush()
           })
         scatter1Group.append('g').call(brushIns)
       }
     },
-
+    renderBrush() {
+      let dataIndex = this.brushList.reduce((pre, item) => {
+        return pre.concat(item.dataIndex)
+      }, [])
+      d3
+      .select(this.$refs.scatterPlot).selectAll('circle').nodes().map((item) => {
+        const i = Number(d3.select(item).attr('data-index'))
+        d3.select(item).classed('un-highlight', true).classed('highlight', (d) => {
+          return dataIndex.length==0?true:dataIndex.includes(i)
+        })
+      })
+      d3.select(this.$refs.scatterPlot).selectAll('g.path-line').remove()
+      this.brushList.forEach((item) => {
+        let gPath = this.brushSvg.append('g').attr('class', 'path-line')
+        item.dataIndex.forEach((ite) => {
+          const node1X = this.xScale1(this.scatter1[ite].x)
+          const node1Y = this.yScale1(this.scatter1[ite].y)
+          const node2X = this.xScale2(this.scatter2[ite].x)
+          const node2Y = this.yScale2(this.scatter2[ite].y)
+          gPath
+            .append('line')
+            .attr('class', 'connecting-line')
+            .attr('x1', node1X + this.margin.left)
+            .attr('y1', node1Y + this.margin.top)
+            .attr('x2', node2X + this.margin.left + 500 + this.margin.right)
+            .attr('y2', node2Y + this.margin.top)
+            .style('stroke', 'gray')
+            .style('stroke-width', 1)
+        })
+      })
+    },
     // 分布图
     drawHistogram() {
       const data = this.lns
