@@ -1,119 +1,114 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>D3 Two Group Scatter Plot with Brushes</title>
+    <title>D3 力导图示例</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-        .brush .selection {
-            fill: steelblue;
-            fill-opacity: 0.3;
+        .node {
+            fill: #69b3a2;
+            stroke: #fff;
+            stroke-width: 1.5px;
         }
-        .axis path,
-        .axis line {
-            fill: none;
-            shape-rendering: crispEdges;
+        .link {
+            stroke: #999;
+            stroke-opacity: 0.6;
         }
     </style>
 </head>
 <body>
-    <svg width="800" height="400"></svg>
+    <svg id="graph" width="1200" height="800"></svg>
+
     <script>
-        const svg = d3.select("svg");
-        const margin = { top: 20, right: 30, bottom: 30, left: 40 };
-        const width = +svg.attr("width") - margin.left - margin.right;
-        const height = +svg.attr("height") - margin.top - margin.bottom;
+        const width = 600;
+        const height = 400;
 
-        const xScale = d3.scaleLinear().domain([0, 100]).range([0, width]);
-        const yScale = d3.scaleLinear().domain([0, 100]).range([height, 0]);
+        // 第一个图的数据
+        const nodes1 = Array.from({ length: 15 }, (_, i) => ({ id: `A${i}` }));
+        const links1 = Array.from({ length: 12 }, (_, i) => ({
+            source: `A${Math.floor(Math.random() * 15)}`,
+            target: `A${Math.floor(Math.random() * 15)}`
+        })).filter(link => link.source !== link.target);
 
-        const xAxis = d3.axisBottom(xScale);
-        const yAxis = d3.axisLeft(yScale);
+        // 第二个图的数据
+        const nodes2 = Array.from({ length: 15 }, (_, i) => ({ id: `B${i}` }));
+        const links2 = Array.from({ length: 12 }, (_, i) => ({
+            source: `B${Math.floor(Math.random() * 15)}`,
+            target: `B${Math.floor(Math.random() * 15)}`
+        })).filter(link => link.source !== link.target);
 
-        const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-        g.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`).call(xAxis);
-        g.append("g").attr("class", "y-axis").call(yAxis);
+        const svg = d3.select("#graph");
 
-        // 生成两组数据
-        const group1 = d3.range(50).map(() => ({ x: Math.random() * 100, y: Math.random() * 100 }));
-        const group2 = d3.range(50).map(() => ({ x: Math.random() * 100, y: Math.random() * 100 }));
+        // 创建第一个力导图
+        createForceGraph(nodes1, links1, 200, 200);
 
-        // 绘制第一组数据
-        g.selectAll(".group1")
-            .data(group1)
-            .enter().append("circle")
-            .attr("class", "group1")
-            .attr("cx", d => xScale(d.x))
-            .attr("cy", d => yScale(d.y))
-            .attr("r", 5)
-            .style("fill", "orange");
+        // 创建第二个力导图
+        createForceGraph(nodes2, links2, 400, 200);
 
-        // 绘制第二组数据
-        g.selectAll(".group2")
-            .data(group2)
-            .enter().append("circle")
-            .attr("class", "group2")
-            .attr("cx", d => xScale(d.x))
-            .attr("cy", d => yScale(d.y))
-            .attr("r", 5)
-            .style("fill", "green");
+        function createForceGraph(nodes, links, xOffset, yOffset) {
+            const simulation = d3.forceSimulation(nodes)
+                .force("link", d3.forceLink().id(d => d.id).distance(50))
+                .force("charge", d3.forceManyBody())
+                .force("center", d3.forceCenter(xOffset, yOffset));
 
-        // 创建第一个 brush
-        const brush1 = d3.brush()
-            .extent([[0, 0], [width, height]])
-            .on("brush end", brushed1);
+            const link = svg.append("g")
+                .attr("class", "links")
+                .selectAll("line")
+                .data(links)
+                .enter().append("line")
+                .attr("class", "link");
 
-        g.append("g")
-            .attr("class", "brush brush1")
-            .call(brush1);
+            const node = svg.append("g")
+                .attr("class", "nodes")
+                .selectAll("circle")
+                .data(nodes)
+                .enter().append("circle")
+                .attr("class", "node")
+                .attr("r", 5)
+                .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended));
 
-        // 创建第二个 brush
-        const brush2 = d3.brush()
-            .extent([[0, 0], [width, height]])
-            .on("brush end", brushed2);
+            node.append("title").text(d => d.id);
 
-        g.append("g")
-            .attr("class", "brush brush2")
-            .call(brush2);
+            simulation
+                .nodes(nodes)
+                .on("tick", ticked);
 
-        function brushed1(event) {
-            const selection = event.selection;
-            if (selection) {
-                const [[x0, y0], [x1, y1]] = selection;
+            simulation.force("link")
+                .links(links);
 
-                // 获取在选区内的节点
-                const selectedCircles = g.selectAll(".group1").filter(function(d) {
-                    const cx = xScale(d.x);
-                    const cy = yScale(d.y);
-                    return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1;
-                });
+            function ticked() {
+                link
+                    .attr("x1", d => d.source.x + xOffset)
+                    .attr("y1", d => d.source.y + yOffset)
+                    .attr("x2", d => d.target.x + xOffset)
+                    .attr("y2", d => d.target.y + yOffset);
 
-                console.log("Brush 1 selected circles:", selectedCircles.size());
+                node
+                    .attr("cx", d => d.x + xOffset)
+                    .attr("cy", d => d.y + yOffset);
+            }
+
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
             }
         }
-
-        function brushed2(event) {
-            const selection = event.selection;
-            if (selection) {
-                const [[x0, y0], [x1, y1]] = selection;
-
-                // 获取在选区内的节点
-                const selectedCircles = g.selectAll(".group2").filter(function(d) {
-                    const cx = xScale(d.x);
-                    const cy = yScale(d.y);
-                    return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1;
-                });
-
-                console.log("Brush 2 selected circles:", selectedCircles.size());
-            }
-        }
-
-        // 处理 brush 之间的相互影响
-        d3.selectAll(".brush").on("mousedown", function() {
-            d3.selectAll(".brush").call(brush1.move, null);
-            d3.selectAll(".brush").call(brush2.move, null);
-        });
     </script>
 </body>
 </html>
