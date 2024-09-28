@@ -1,118 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>D3 Two Group Scatter Plots with Brushes</title>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <style>
-        .brush .selection {
-            fill: steelblue;
-            fill-opacity: 0.3;
-        }
-        .axis path,
-        .axis line {
-            fill: none;
-            shape-rendering: crispEdges;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Two Force-Directed Layouts in One SVG</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    svg {
+      background-color: #f0f0f0;
+    }
+    line {
+      stroke: #999;
+      stroke-width: 2;
+    }
+    circle {
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-    <svg width="800" height="400"></svg>
-    <script>
-        const svg = d3.select("svg");
-        const margin = { top: 20, right: 30, bottom: 30, left: 40 };
-        const width = +svg.attr("width") - margin.left - margin.right;
-        const height = +svg.attr("height") - margin.top - margin.bottom;
+  <script>
+    const width = 800;
+    const height = 600;
 
-        const xScale = d3.scaleLinear().domain([0, 100]).range([0, width]);
-        const yScale1 = d3.scaleLinear().domain([0, 100]).range([height / 2, 0]); // 上半部分
-        const yScale2 = d3.scaleLinear().domain([0, 100]).range([height, height / 2]); // 下半部分
+    // 第一组节点和链接数据
+    const nodes1 = [
+      { id: 'node1', r: 10 },
+      { id: 'node2', r: 15 },
+      { id: 'node3', r: 20 },
+      { id: 'node4', r: 20 },
+      { id: 'node5', r: 20 }
+    ];
 
-        const xAxis = d3.axisBottom(xScale);
-        const yAxis1 = d3.axisLeft(yScale1);
-        const yAxis2 = d3.axisLeft(yScale2);
+    const links1 = [
+      { source: 'node1', target: 'node2' },
+      { source: 'node2', target: 'node3' }
+    ];
 
-        const g1 = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-        g1.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height / 2})`).call(xAxis);
-        g1.append("g").attr("class", "y-axis").call(yAxis1);
+    // 第二组节点和链接数据
+    const nodes2 = [
+      { id: 'nodeA', r: 10 },
+      { id: 'nodeB', r: 15 },
+      { id: 'nodeC', r: 20 }
+    ];
 
-        const g2 = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-        g2.attr("transform", `translate(${margin.left},${height / 2 + margin.top})`);
-        g2.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height / 2})`).call(xAxis);
-        g2.append("g").attr("class", "y-axis").call(yAxis2);
+    const links2 = [
+      { source: 'nodeA', target: 'nodeB' },
+      { source: 'nodeB', target: 'nodeC' }
+    ];
 
-        // 生成两组数据
-        const group1 = d3.range(50).map(() => ({ x: Math.random() * 100, y: Math.random() * 100 }));
-        const group2 = d3.range(50).map(() => ({ x: Math.random() * 100, y: Math.random() * 100 }));
+    // 创建 SVG 容器
+    const svg = d3.select("body").append("svg")
+      .attr("width", width)
+      .attr("height", height);
 
-        // 绘制第一组数据
-        g1.selectAll(".circle1")
-            .data(group1)
-            .enter().append("circle")
-            .attr("class", "circle1")
-            .attr("cx", d => xScale(d.x))
-            .attr("cy", d => yScale1(d.y))
-            .attr("r", 5);
+    // === 第一组力导向布局 ===
+    const simulation1 = d3.forceSimulation(nodes1)
+      .force("link", d3.forceLink(links1).id(d => d.id))
+      .force("charge", d3.forceManyBody().strength(-300))
+      .force("center", d3.forceCenter(width / 4, height / 2)) // 第一组布局在左侧
+      .force("collision", d3.forceCollide().radius(d => d.r + 5));
 
-        // 绘制第二组数据
-        g2.selectAll(".circle2")
-            .data(group2)
-            .enter().append("circle")
-            .attr("class", "circle2")
-            .attr("cx", d => xScale(d.x))
-            .attr("cy", d => yScale2(d.y))
-            .attr("r", 5);
+    const link1 = svg.append("g")
+      .selectAll("line")
+      .data(links1)
+      .enter().append("line");
 
-        // 创建第一个 brush
-        const brush1 = d3.brush()
-            .extent([[0, 0], [width, height / 2]])
-            .on("brush end", brushed1);
+    const node1 = svg.append("g")
+      .selectAll("circle")
+      .data(nodes1)
+      .enter().append("circle")
+      .attr("r", d => d.r)
+      .attr("fill", "steelblue")
+      .call(d3.drag()
+        .on("start", dragStarted(simulation1))
+        .on("drag", dragged)
+        .on("end", dragEnded(simulation1)));
 
-        g1.append("g")
-            .attr("class", "brush brush1")
-            .call(brush1);
+    simulation1.on("tick", () => {
+      link1
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
 
-        // 创建第二个 brush
-        const brush2 = d3.brush()
-            .extent([[0, 0], [width, height / 2]])
-            .on("brush end", brushed2);
+      node1
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+    });
 
-        g2.append("g")
-            .attr("class", "brush brush2")
-            .call(brush2);
+    // === 第二组力导向布局 ===
+    const simulation2 = d3.forceSimulation(nodes2)
+      .force("link", d3.forceLink(links2).id(d => d.id))
+      .force("charge", d3.forceManyBody().strength(-300))
+      .force("center", d3.forceCenter(3 * width / 4, height / 2)) // 第二组布局在右侧
+      .force("collision", d3.forceCollide().radius(d => d.r + 5));
 
-        function brushed1(event) {
-            const selection = event.selection;
-            if (selection) {
-                const [[x0, y0], [x1, y1]] = selection;
+    const link2 = svg.append("g")
+      .selectAll("line")
+      .data(links2)
+      .enter().append("line");
 
-                // 获取在选区内的节点
-                const selectedCircles = g1.selectAll(".circle1").filter(function(d) {
-                    const cx = xScale(d.x);
-                    const cy = yScale1(d.y);
-                    return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1;
-                });
+    const node2 = svg.append("g")
+      .selectAll("circle")
+      .data(nodes2)
+      .enter().append("circle")
+      .attr("r", d => d.r)
+      .attr("fill", "tomato")
+      .call(d3.drag()
+        .on("start", dragStarted(simulation2))
+        .on("drag", dragged)
+        .on("end", dragEnded(simulation2)));
 
-                console.log("Brush 1 selected circles:", selectedCircles.size());
-            }
-        }
+    simulation2.on("tick", () => {
+      link2
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
 
-        function brushed2(event) {
-            const selection = event.selection;
-            if (selection) {
-                const [[x0, y0], [x1, y1]] = selection;
+      node2
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+    });
 
-                // 获取在选区内的节点
-                const selectedCircles = g2.selectAll(".circle2").filter(function(d) {
-                    const cx = xScale(d.x);
-                    const cy = yScale2(d.y);
-                    return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1;
-                });
+    // 拖动行为的函数
+    function dragStarted(simulation) {
+      return (event, d) => {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      };
+    }
 
-                console.log("Brush 2 selected circles:", selectedCircles.size());
-            }
-        }
-    </script>
+    function dragged(event, d) {
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+
+    function dragEnded(simulation) {
+      return (event, d) => {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+      };
+    }
+  </script>
 </body>
 </html>

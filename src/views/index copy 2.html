@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Two Force-Directed Layouts</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      svg {
+        background-color: #f0f0f0;
+      }
+      line {
+        stroke: #999;
+        stroke-width: 2;
+      }
+      circle {
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      const width = 800 // SVG宽度
+      const height = 600 // SVG高度
+
+      // 第一组节点和链接数据
+      const nodes1 = [
+        { id: 'node1', r: 10 },
+        { id: 'node2', r: 15 },
+        { id: 'node3', r: 20 },
+        { id: 'node4', r: 15 },
+        { id: 'node5', r: 20 }
+      ]
+
+      const links1 = [
+        { source: 'node1', target: 'node2' },
+        { source: 'node2', target: 'node3' }
+      ]
+
+      // 第二组节点和链接数据
+      const nodes2 = [
+        { id: 'nodeA', r: 10 },
+        { id: 'nodeB', r: 15 },
+        { id: 'nodeC', r: 20 }
+      ]
+
+      const links2 = [
+        { source: 'nodeA', target: 'nodeB' },
+        { source: 'nodeB', target: 'nodeC' }
+      ]
+
+      // 创建 SVG 容器
+      const svg = d3.select('body').append('svg').attr('width', width).attr('height', height)
+
+      // === 第一组力导向布局 ===
+      const simulation1 = d3
+        .forceSimulation(nodes1)
+        .force(
+          'link',
+          d3.forceLink(links1).id((d) => d.id)
+        )
+        .force('charge', d3.forceManyBody().strength(-300))
+        .force('center', d3.forceCenter(200, height / 2)) // 将第一组布局放在左侧
+        .force(
+          'collision',
+          d3.forceCollide().radius((d) => d.r + 5)
+        )
+
+      const link1 = svg
+        .append('g')
+        .attr('class', 'links1')
+        .selectAll('line')
+        .data(links1)
+        .enter()
+        .append('line')
+
+      const node1 = svg
+        .append('g')
+        .attr('class', 'nodes1')
+        .selectAll('circle')
+        .data(nodes1)
+        .enter()
+        .append('circle')
+        .attr('r', (d) => d.r)
+        .attr('fill', 'steelblue')
+        .call(
+          d3
+            .drag()
+            .on('start', dragStarted(simulation1))
+            .on('drag', dragged)
+            .on('end', dragEnded(simulation1))
+        )
+
+      simulation1.on('tick', () => {
+        node1.attr('cx', (d) => d.x).attr('cy', (d) => d.y)
+        node1
+          .attr('cx', (d) => {
+            // 限制节点的 x 坐标在 [left, right] 区间内
+            d.x = Math.max(200, Math.min(400, d.x))
+            return d.x
+          })
+          .attr('cy', (d) => {
+            // 限制节点的 y 坐标在 [top, bottom] 区间内
+            d.y = Math.max(50, Math.min(550, d.y))
+            return d.y
+          })
+        link1
+          .attr('x1', (d) => d.source.x)
+          .attr('y1', (d) => d.source.y)
+          .attr('x2', (d) => d.target.x)
+          .attr('y2', (d) => d.target.y)
+      })
+
+      // === 第二组力导向布局 ===
+      const simulation2 = d3
+        .forceSimulation(nodes2)
+        .force(
+          'link',
+          d3.forceLink(links2).id((d) => d.id)
+        )
+        .force('charge', d3.forceManyBody().strength(-300))
+        .force('center', d3.forceCenter(600, height / 2)) // 将第二组布局放在右侧
+        .force(
+          'collision',
+          d3.forceCollide().radius((d) => d.r + 5)
+        )
+
+      const link2 = svg
+        .append('g')
+        .attr('class', 'links2')
+        .selectAll('line')
+        .data(links2)
+        .enter()
+        .append('line')
+
+      const node2 = svg
+        .append('g')
+        .attr('class', 'nodes2')
+        .selectAll('circle')
+        .data(nodes2)
+        .enter()
+        .append('circle')
+        .attr('r', (d) => d.r)
+        .attr('fill', 'tomato')
+        .call(
+          d3
+            .drag()
+            .on('start', dragStarted(simulation2))
+            .on('drag', dragged)
+            .on('end', dragEnded(simulation2))
+        )
+
+      simulation2.on('tick', () => {
+        link2
+          .attr('x1', (d) => d.source.x)
+          .attr('y1', (d) => d.source.y)
+          .attr('x2', (d) => d.target.x)
+          .attr('y2', (d) => d.target.y)
+
+        node2.attr('cx', (d) => d.x).attr('cy', (d) => d.y)
+      })
+
+      // 拖动行为的函数
+ 
+    </script>
+  </body>
+</html>

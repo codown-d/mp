@@ -130,6 +130,7 @@
           ></chart-plot>
         </div>
       </div>
+      <force-guidance></force-guidance>
       <svg ref="scatterPlot" style="height: 450px" class="scatterPlot"></svg>
       <div style="display: flex">
         <v-card style="height: 190px; width: 300px; margin-right: 150px; margin-left: 150px">
@@ -154,9 +155,15 @@ import { Slider } from 'ant-design-vue'
 import Papa from 'papaparse'
 import dataList from '@/views/data.js'
 import ChartPlot from './ChartPlot.vue'
+import ForceGuidance from './ForceGuidance.vue'
 
 export default {
-  components: { 'a-slider': Slider, UploadFile, 'chart-plot': ChartPlot },
+  components: {
+    'a-slider': Slider,
+    UploadFile,
+    'chart-plot': ChartPlot,
+    'force-guidance': ForceGuidance
+  },
   data() {
     return {
       forceChart: null,
@@ -198,27 +205,27 @@ export default {
       nodesStorage: JSON.parse(window.localStorage.getItem('nodesStorage') || '{}'),
       scatterPlotW: document.body.clientWidth - 350,
       brushList: [],
-      brushSvg:null,
-      xScale1:null,
-      yScale1:null,
-      xScale2:null,
-      yScale2:null,
-      margin:{}
+      brushSvg: null,
+      xScale1: null,
+      yScale1: null,
+      xScale2: null,
+      yScale2: null,
+      margin: {}
     }
   },
   mounted() {},
   methods: {
-    brushInit(){
-      this.brushList=[]
+    brushInit() {
+      this.brushList = []
       this.brushDraw()
     },
     clearBrush(n) {
-      if ((n == 0)) {
+      if (n == 0) {
         this.brushList.shift()
       } else {
         this.brushList.pop()
       }
-      
+
       this.renderBrush()
     },
     renderHistoricalDataset() {
@@ -226,36 +233,38 @@ export default {
       //   this.$refs.childComponent2.renderHistoricalDataset()
     },
     get_lns() {
-      this.$axios.post('/userapi/get_lns/', {
-        "k": this.value,
-        "distance": this.distance,
-        "from": this.sliderValues[0],
-        "to": this.sliderValues[1],
-        "epoch1": this.epoch1,
-        "epoch2": this.epoch2,
-        "layer1": this.layer1,
-        "layer2": this.layer2,
-      }).then((response) => {
-      // let response = dataList
-      d3.select(this.$refs.scatterPlot).selectAll('*').remove()
-      d3.select(this.$refs.chartContainer).selectAll('*').remove()
-      d3.select(this.$refs.features1).selectAll('*').remove()
-      d3.select(this.$refs.features2).selectAll('*').remove()
-      this.collected = []
-      this.scatter1 = response.data.matrix1
-      this.scatter2 = response.data.matrix2
-      this.lns = response.data.lns
-      this.features1 = response.data.features1
-      this.features2 = response.data.features2
-      this.density1 = response.data.density1
-      this.density2 = response.data.density2
-      this.click_id = -1
+      this.$axios
+        .post('/userapi/get_lns/', {
+          k: this.value,
+          distance: this.distance,
+          from: this.sliderValues[0],
+          to: this.sliderValues[1],
+          epoch1: this.epoch1,
+          epoch2: this.epoch2,
+          layer1: this.layer1,
+          layer2: this.layer2
+        })
+        .then((response) => {
+          // let response = dataList
+          d3.select(this.$refs.scatterPlot).selectAll('*').remove()
+          d3.select(this.$refs.chartContainer).selectAll('*').remove()
+          d3.select(this.$refs.features1).selectAll('*').remove()
+          d3.select(this.$refs.features2).selectAll('*').remove()
+          this.collected = []
+          this.scatter1 = response.data.matrix1
+          this.scatter2 = response.data.matrix2
+          this.lns = response.data.lns
+          this.features1 = response.data.features1
+          this.features2 = response.data.features2
+          this.density1 = response.data.density1
+          this.density2 = response.data.density2
+          this.click_id = -1
 
-      // this.dataList = response.data
+          // this.dataList = response.data
 
-      this.drawChart()
-      this.drawHistogram()
-      })
+          this.drawChart()
+          this.drawHistogram()
+        })
     },
     //点击单个节点，淡化其它节点
     click_node() {
@@ -367,7 +376,7 @@ export default {
       const width = 500
       const height = 400
       const margin = { top: 20, right: 40, bottom: 20, left: 40 }
-      this.margin=margin
+      this.margin = margin
       const svgWidth = (width + margin.left) * 2 + margin.right
       const svgHeight = height
       const max = Math.max(
@@ -381,11 +390,8 @@ export default {
       // 创建颜色比例尺
       const labScale = d3.scaleLinear().domain([min, max]).range([-160, 160])
       // 创建SVG元素
-      let svg = d3
-        .select(this.$refs.scatterPlot)
-        .attr('width', svgWidth)
-        .attr('height', svgHeight)
-        this.brushSvg = svg
+      let svg = d3.select(this.$refs.scatterPlot).attr('width', svgWidth).attr('height', svgHeight)
+      this.brushSvg = svg
       const colors = d3.scaleOrdinal(d3.schemeAccent)
       // 创建散点图1的分组
       const scatter1Group = svg
@@ -402,25 +408,25 @@ export default {
         .scaleLinear()
         .domain(d3.extent(scatter1, (d) => d.x))
         .range([0, width])
-      
-        this.xScale1=xScale1
+
+      this.xScale1 = xScale1
       const xScale2 = d3
         .scaleLinear()
         .domain(d3.extent(scatter2, (d) => d.x))
         .range([0, width])
 
-        this.xScale2=xScale2
+      this.xScale2 = xScale2
       // 创建y轴的比例尺（散点图1）
       const yScale1 = d3
         .scaleLinear()
         .domain(d3.extent(scatter1, (d) => d.y))
         .range([height, 0])
-        this.yScale1=yScale1
+      this.yScale1 = yScale1
       const yScale2 = d3
         .scaleLinear()
         .domain(d3.extent(scatter2, (d) => d.y))
         .range([height, 0])
-        this.yScale2=yScale2
+      this.yScale2 = yScale2
 
       // 创建x轴（散点图1）
       scatter1Group
@@ -598,13 +604,17 @@ export default {
       let dataIndex = this.brushList.reduce((pre, item) => {
         return pre.concat(item.dataIndex)
       }, [])
-      d3
-      .select(this.$refs.scatterPlot).selectAll('circle').nodes().map((item) => {
-        const i = Number(d3.select(item).attr('data-index'))
-        d3.select(item).classed('un-highlight', true).classed('highlight', (d) => {
-          return dataIndex.length==0?true:dataIndex.includes(i)
+      d3.select(this.$refs.scatterPlot)
+        .selectAll('circle')
+        .nodes()
+        .map((item) => {
+          const i = Number(d3.select(item).attr('data-index'))
+          d3.select(item)
+            .classed('un-highlight', true)
+            .classed('highlight', (d) => {
+              return dataIndex.length == 0 ? true : dataIndex.includes(i)
+            })
         })
-      })
       d3.select(this.$refs.scatterPlot).selectAll('g.path-line').remove()
       this.brushList.forEach((item) => {
         let gPath = this.brushSvg.append('g').attr('class', 'path-line')
