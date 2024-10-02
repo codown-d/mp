@@ -233,38 +233,38 @@ export default {
       //   this.$refs.childComponent2.renderHistoricalDataset()
     },
     get_lns() {
-      this.$axios
-        .post('/userapi/get_lns/', {
-          k: this.value,
-          distance: this.distance,
-          from: this.sliderValues[0],
-          to: this.sliderValues[1],
-          epoch1: this.epoch1,
-          epoch2: this.epoch2,
-          layer1: this.layer1,
-          layer2: this.layer2
-        })
-        .then((response) => {
-          // let response = dataList
-          d3.select(this.$refs.scatterPlot).selectAll('*').remove()
-          d3.select(this.$refs.chartContainer).selectAll('*').remove()
-          d3.select(this.$refs.features1).selectAll('*').remove()
-          d3.select(this.$refs.features2).selectAll('*').remove()
-          this.collected = []
-          this.scatter1 = response.data.matrix1
-          this.scatter2 = response.data.matrix2
-          this.lns = response.data.lns
-          this.features1 = response.data.features1
-          this.features2 = response.data.features2
-          this.density1 = response.data.density1
-          this.density2 = response.data.density2
-          this.click_id = -1
+      // this.$axios
+      //   .post('/userapi/get_lns/', {
+      //     k: this.value,
+      //     distance: this.distance,
+      //     from: this.sliderValues[0],
+      //     to: this.sliderValues[1],
+      //     epoch1: this.epoch1,
+      //     epoch2: this.epoch2,
+      //     layer1: this.layer1,
+      //     layer2: this.layer2
+      //   })
+      //   .then((response) => {
+      let response = dataList
+      d3.select(this.$refs.scatterPlot).selectAll('*').remove()
+      d3.select(this.$refs.chartContainer).selectAll('*').remove()
+      d3.select(this.$refs.features1).selectAll('*').remove()
+      d3.select(this.$refs.features2).selectAll('*').remove()
+      this.collected = []
+      this.scatter1 = response.data.matrix1
+      this.scatter2 = response.data.matrix2
+      this.lns = response.data.lns
+      this.features1 = response.data.features1
+      this.features2 = response.data.features2
+      this.density1 = response.data.density1
+      this.density2 = response.data.density2
+      this.click_id = -1
 
-          // this.dataList = response.data
+      // this.dataList = response.data
 
-          this.drawChart()
-          this.drawHistogram()
-        })
+      this.drawChart()
+      this.drawHistogram()
+      // })
     },
     //点击单个节点，淡化其它节点
     click_node() {
@@ -283,6 +283,15 @@ export default {
           this.nodes = response.data.node
           d3.select(this.$refs.scatterPlot).selectAll('*').remove()
           this.drawChart()
+        })
+    },
+    click_dimensional(id) {
+      this.$axios
+        .post('/userapi/k_hop/', {
+          id: [Number(id)].map(item=>Number(item))
+        })
+        .then((response) => {
+          console.log('/userapi/k_hop/', response)
         })
     },
     handleFileChange(event) {
@@ -554,6 +563,7 @@ export default {
         const i = d3.select(this).attr('data-index')
         sf.click_id = scatter1[i].index
         sf.click_node()
+        sf.click_dimensional(sf.click_id)
       }
 
       if (sf.brush === true) {
