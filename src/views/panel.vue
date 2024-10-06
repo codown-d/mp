@@ -130,7 +130,7 @@
           ></chart-plot>
         </div>
       </div>
-      <force-guidance></force-guidance>
+      <force-guidance :result_edge="forceData.result_edge" :result_nodes="forceData.result_nodes"></force-guidance>
       <svg ref="scatterPlot" style="height: 450px" class="scatterPlot"></svg>
       <div style="display: flex">
         <v-card style="height: 190px; width: 300px; margin-right: 150px; margin-left: 150px">
@@ -154,6 +154,7 @@ import UploadFile from '@/views/UploadFile.vue'
 import { Slider } from 'ant-design-vue'
 import Papa from 'papaparse'
 import dataList from '@/views/data.js'
+import forceData from '@/views/data1.js'
 import ChartPlot from './ChartPlot.vue'
 import ForceGuidance from './ForceGuidance.vue'
 
@@ -210,10 +211,16 @@ export default {
       yScale1: null,
       xScale2: null,
       yScale2: null,
-      margin: {}
+      margin: {},
+      forceData:{
+        result_edge:[],
+        result_nodes:{}
+      }
     }
   },
-  mounted() {},
+  mounted() {
+    this.forceData = forceData
+  },
   methods: {
     brushInit() {
       this.brushList = []
