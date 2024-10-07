@@ -15,6 +15,10 @@ export default {
     },
     result_nodes: {
       type: Object,
+      default: {}
+    },
+    brushNode: {
+      type: Array,
       default: []
     }
   },
@@ -41,8 +45,19 @@ export default {
     result_nodes: {
       handler(newValue) {
         this.nodes = Object.keys(newValue).reduce((pre, item, index) => {
-          return pre.concat(newValue[item].map((ite) => ({ id: ite, category: index })))
+          return pre.concat(
+            newValue[item].map((ite) => ({
+              id: ite,
+              category: index,
+              isSibling: false
+            }))
+          )
         }, [])
+        this.drawChart()
+      }
+    },
+    brushNode: {
+      handler(newValue) {
         this.drawChart()
       }
     }
@@ -89,6 +104,7 @@ export default {
         .attr('fill', 'transparent') // 填充颜色
       const nodes = this.nodes
       const links = this.links
+      console.log(this.nodes,links)
       if (nodes.length == 0) return
       const simulation = d3
         .forceSimulation(nodes)
@@ -124,7 +140,9 @@ export default {
         .enter()
         .append('circle')
         .attr('r', (d) => 6)
-        .attr('fill', 'steelblue')
+        .attr('fill', (d) => {
+          return this.brushNode.includes(d.id) ? 'green' : 'gray'
+        })
         .call(
           d3
             .drag()

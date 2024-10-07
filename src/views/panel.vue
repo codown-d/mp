@@ -130,7 +130,11 @@
           ></chart-plot>
         </div>
       </div>
-      <force-guidance :result_edge="forceData.result_edge" :result_nodes="forceData.result_nodes"></force-guidance>
+      <force-guidance
+        :result_edge="forceData.result_edge"
+        :result_nodes="forceData.result_nodes"
+        :brushNode="brushNode"
+      ></force-guidance>
       <svg ref="scatterPlot" style="height: 450px" class="scatterPlot"></svg>
       <div style="display: flex">
         <v-card style="height: 190px; width: 300px; margin-right: 150px; margin-left: 150px">
@@ -149,7 +153,6 @@
 
 <script>
 import * as d3 from 'd3'
-import { watch } from 'vue'
 import UploadFile from '@/views/UploadFile.vue'
 import { Slider } from 'ant-design-vue'
 import Papa from 'papaparse'
@@ -212,15 +215,16 @@ export default {
       xScale2: null,
       yScale2: null,
       margin: {},
-      forceData:{
-        result_edge:[],
-        result_nodes:{}
+      forceData: {
+        result_edge: [],
+        result_nodes: {}
       }
     }
   },
   mounted() {
     this.forceData = forceData
   },
+
   methods: {
     brushInit() {
       this.brushList = []
@@ -295,9 +299,10 @@ export default {
     click_dimensional(id) {
       this.$axios
         .post('/userapi/k_hop/', {
-          id: [Number(id)].map(item=>Number(item))
+          id: [Number(id)].map((item) => Number(item))
         })
         .then((response) => {
+          this.forceData = response.data
           console.log('/userapi/k_hop/', response)
         })
     },
@@ -861,6 +866,16 @@ export default {
         node.attr('cx', (d) => d.x).attr('cy', (d) => d.y)
       })
     }
+  },
+  computed: {
+    brushNode() {
+      if(this.brushList.length>1){
+      console.log(this.brushList[1].dataIndex)
+        return this.brushList[1].dataIndex
+      }else{
+        return []
+      }
+    },
   },
   watch: {
     epoch1(newValue, oldValue) {
