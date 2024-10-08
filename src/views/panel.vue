@@ -299,7 +299,7 @@ export default {
     click_dimensional(id) {
       this.$axios
         .post('/userapi/k_hop/', {
-          id: [Number(id)].map((item) => Number(item))
+          id: id
         })
         .then((response) => {
           this.forceData = response.data
@@ -575,7 +575,7 @@ export default {
         const i = d3.select(this).attr('data-index')
         sf.click_id = scatter1[i].index
         sf.click_node()
-        sf.click_dimensional(sf.click_id)
+        // sf.click_dimensional(sf.click_id)
       }
 
       if (sf.brush === true) {
@@ -869,13 +869,16 @@ export default {
   },
   computed: {
     brushNode() {
-      if(this.brushList.length>1){
-      console.log(this.brushList[1].dataIndex)
+      if (this.brushList.length > 0) {
+        this.click_dimensional(this.brushList[0].dataIndex)
+      }
+      if (this.brushList.length > 1) {
+        console.log(this.brushList[1].dataIndex)
         return this.brushList[1].dataIndex
-      }else{
+      } else {
         return []
       }
-    },
+    }
   },
   watch: {
     epoch1(newValue, oldValue) {
