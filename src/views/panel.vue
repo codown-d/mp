@@ -232,6 +232,10 @@ export default {
     },
     clearBrush(n) {
       if (n == 0) {
+        this.forceData={
+        result_edge: [],
+        result_nodes: {}
+      }
         this.brushList.shift()
       } else {
         this.brushList.pop()
@@ -617,6 +621,7 @@ export default {
                 })
               }
             })
+            console.log(this.brushList)
             this.renderBrush()
           })
         scatter1Group.append('g').call(brushIns)

@@ -26,7 +26,7 @@ export default {
     return {
       nodes: [],
       links: [],
-      width: 900,
+      width: 1400,
       height: 600,
       svg: null
     }
@@ -39,11 +39,13 @@ export default {
     result_edge: {
       handler(newValue) {
         this.links = [...newValue]
+        console.log(this.links)
         this.drawChart()
       }
     },
     result_nodes: {
       handler(newValue) {
+        console.log(123,newValue)
         this.nodes = Object.keys(newValue).reduce((pre, item) => {
           pre.push(
             newValue[item].map((ite) => ({
@@ -70,6 +72,7 @@ export default {
     },
     drawChart() {
       this.svg.selectAll('*').remove()
+      console.log(this.nodes)
       if (this.nodes.length == 0) return
       let rects = [
         {
@@ -85,7 +88,7 @@ export default {
           y: 50
         },
         {
-          width: 250,
+          width: 750,
           height: 500,
           x: 600,
           y: 50
@@ -102,6 +105,7 @@ export default {
         .attr('height', (d) => d.height) // 矩形的高度
         .attr('stroke', 'black') // 边框颜色
         .attr('fill', 'transparent') // 填充颜色
+        this.svg.append('g').attr('class', 'links')
       const links = this.links
       let drawForceSimulation = async () => {
         let allNodes = JSON.parse(JSON.stringify(this.nodes)) 
@@ -151,7 +155,7 @@ export default {
       }
       let drawLinks = () => {
         let nodeObj = {}
-        this.svg.selectAll('g.links').remove()
+        this.svg.select('g.links').selectAll("*").remove()
         this.svg.selectAll('circle').each(function () {
           const cx = d3.select(this).attr('cx')
           const cy = d3.select(this).attr('cy')
@@ -162,8 +166,7 @@ export default {
           let node2 = nodeObj[link.target]
           return { ...link, x1: node1.x, y1: node1.y, x2: node2.x, y2: node2.y }
         })
-        this.svg.append('g')
-          .attr('class', 'links')
+        this.svg.select('g.links')
           .selectAll("line")
           .data(linesData)
           .enter()
@@ -172,8 +175,8 @@ export default {
           .attr("y1", d => d.y1)
           .attr("x2", d => d.x2)
           .attr("y2", d => d.y2)
-          .attr("stroke", "black")
-          .attr("stroke-width", 2);
+          .attr("stroke", "gray")
+          .attr("stroke-width", 1);
       }
       drawForceSimulation().then(drawLinks)
       function dragStarted(simulation) {
