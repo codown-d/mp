@@ -158,6 +158,8 @@ import { Slider } from 'ant-design-vue'
 import Papa from 'papaparse'
 import dataList from '@/views/data.js'
 import forceData from '@/views/data1.js'
+import data3 from '@/views/data3.js'
+
 import ChartPlot from './ChartPlot.vue'
 import ForceGuidance from './ForceGuidance.vue'
 
@@ -231,11 +233,13 @@ export default {
       this.brushDraw()
     },
     clearBrush(n) {
+      this.links = []
+      this.nodes = []
       if (n == 0) {
-        this.forceData={
-        result_edge: [],
-        result_nodes: {}
-      }
+        this.forceData = {
+          result_edge: [],
+          result_nodes: {}
+        }
         this.brushList.shift()
       } else {
         this.brushList.pop()
@@ -275,30 +279,87 @@ export default {
       this.density2 = response.data.density2
       this.click_id = -1
 
-      // this.dataList = response.data
+      this.dataList = response.data
 
       this.drawChart()
       this.drawHistogram()
+
+      this.click_node()
       // })
+    },
+    clickNode(data) {
+      this.click_id = data.nodeId
+      this.click_node()
     },
     //点击单个节点，淡化其它节点
     click_node() {
-      this.$axios
-        .post('/userapi/click_node/', {
-          id: this.click_id,
-          epoch1: this.epoch1,
-          epoch2: this.epoch1,
-          layer1: this.layer1,
-          layer2: this.layer2
+      let response = data3
+      // this.$axios
+      //   .post('/userapi/click_node/', {
+      //     id: this.click_id,
+      //     epoch1: this.epoch1,
+      //     epoch2: this.epoch1,
+      //     layer1: this.layer1,
+      //     layer2: this.layer2
+      //   })
+      //   .then((response) => {
+      this.links = response.data.link
+      this.nodes = response.data.node
+      this.showMatrixChart()
+      // })
+    },
+    showMatrixChart() {
+      console.log(this.links, this.nodes)
+      let nodeObj = this.nodes.reduce((pre, item) => {
+        pre[item.id] = item
+        return pre
+      }, {})
+      let nodeIds = Object.keys(nodeObj).map((item) => Number(item))
+      let scatterSvg = d3.select(this.$refs.scatterPlot)
+      scatterSvg.selectAll('circle').each(function (item) {
+        const element = d3.select(this)
+        let i = element.attr('data-index')
+        if (nodeIds.includes(Number(i))) {
+          element.classed('highlight', true).classed('un-highlight', false)
+        } else {
+          element.classed('un-highlight', true).classed('highlight', false)
+        }
+      })
+      console.log(this.links)
+      ;[1, 2].forEach((nodes) => {
+        this.links.forEach((link) => {
+          let sourceNode = this.scatter1.find(item=>item.index==link.source)
+          let targetNode = this.scatter1.find(item=>item.index==link.target)
+          if (nodes == 2) {
+            sourceNode = this.scatter2.find(item=>item.index==link.source)
+            targetNode = this.scatter2.find(item=>item.index==link.target)
+          }
+            console.log(sourceNode,targetNode)
+          if (sourceNode && targetNode) {
+            let node1X = this.xScale1(sourceNode.x)+ this.margin.left
+            let node1Y = this.yScale1(sourceNode.y)
+            let node2X = this.xScale1(targetNode.x)+ this.margin.left
+            let node2Y = this.yScale1(targetNode.y)
+            if (nodes == 2) {
+              node1X = this.xScale2(sourceNode.x) + 500 + this.margin.right
+              node1Y = this.xScale2(sourceNode.y)
+              node2X = this.xScale2(targetNode.x) + 500 + this.margin.right
+              node2Y = this.xScale2(targetNode.y)
+            console.log(node1X,node2X)
+            }
+            scatterSvg
+              .append('line')
+              .attr('class', 'connecting-line')
+              .attr('x1', node1X )
+              .attr('y1', node1Y + this.margin.top)
+              .attr('x2', node2X )
+              .attr('y2', node2Y + this.margin.top)
+              .attr('fill', 'none')
+              .style('stroke', 'gray')
+              .style('stroke-width', 1)
+          }
         })
-        .then((response) => {
-          const svg = d3.select('#topology')
-          svg.selectAll('*').remove()
-          this.links = response.data.link
-          this.nodes = response.data.node
-          d3.select(this.$refs.scatterPlot).selectAll('*').remove()
-          this.drawChart()
-        })
+      })
     },
     click_dimensional(id) {
       this.$axios
@@ -579,7 +640,6 @@ export default {
         const i = d3.select(this).attr('data-index')
         sf.click_id = scatter1[i].index
         sf.click_node()
-        // sf.click_dimensional(sf.click_id)
       }
 
       if (sf.brush === true) {
@@ -878,7 +938,6 @@ export default {
         this.click_dimensional(this.brushList[0].dataIndex)
       }
       if (this.brushList.length > 1) {
-        console.log(this.brushList[1].dataIndex)
         return this.brushList[1].dataIndex
       } else {
         return []

@@ -115,7 +115,7 @@ export default {
               const rect = rects[index]
               const simulation = d3
                 .forceSimulation(nodes)
-                .force('charge', d3.forceManyBody().strength(-10))
+                .force('charge', d3.forceManyBody().strength(-5))
                 .force('center', d3.forceCenter(rect.x + rect.width / 2, rect.y + rect.height / 2)) // 将第一组布局放在左侧
                 .force(
                   'collision',
