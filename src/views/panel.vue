@@ -94,7 +94,18 @@
       </v-card>
     </div>
     <div class="container" style="width: 0; flex: 1; padding-left: 300px">
-      <div style="position: fixed; z-index: 9; top:0;padding-top:20px ;background: #fff; width: 100%;display: flex; align-items: center;">
+      <div
+        style="
+          position: fixed;
+          z-index: 9;
+          top: 0;
+          padding-top: 20px;
+          background: #fff;
+          width: 100%;
+          display: flex;
+          align-items: center;
+        "
+      >
         <v-btn-toggle v-model="text" color="deep-purple-accent-3" rounded="0" group>
           <v-btn @click="this.defaultDraw" style="margin-bottom: 4px">position</v-btn>
           <v-btn @click="this.trueDraw" style="margin-left: 8px">true label</v-btn>
@@ -102,14 +113,14 @@
         </v-btn-toggle>
         <v-btn @click="this.clickDraw" style="margin-left: 10px; margin-right: 20px">reset</v-btn>
         <v-switch
-        style="height: 44px;margin-top: -10px;"
+          style="height: 44px; margin-top: -10px"
           label="brush"
           v-model="brush"
           @click="brushInit"
         ></v-switch>
       </div>
 
-      <div style="padding-top: 68px;">
+      <div style="padding-top: 68px">
         <div style="width: 100%">
           <chart-plot
             ref="childComponent1"
@@ -120,20 +131,13 @@
             @click-node="(data) => clickNode(data)"
           ></chart-plot>
         </div>
-        <div style="width: 50%" v-if="false">
-          <chart-plot
-            ref="childComponent2"
-            v-if="false"
-            :selectActNode="selectActNode2"
-            :dataList="dataList"
-            @click-node="(data) => clickNode(data)"
-          ></chart-plot>
-        </div>
       </div>
       <force-guidance
         :result_edge="forceData.result_edge"
         :result_nodes="forceData.result_nodes"
         :brushNode="brushNode"
+        :brush="brush"
+        :guidanceColors="guidanceColors"
       ></force-guidance>
       <svg ref="scatterPlot" style="height: 450px" class="scatterPlot"></svg>
       <div style="display: flex">
@@ -220,7 +224,11 @@ export default {
       forceData: {
         result_edge: [],
         result_nodes: {}
-      }
+      },
+      guidanceColors: {},
+      colors: [],
+      scatter1colors: {},
+      scatter2colors: {}
     }
   },
   mounted() {
@@ -263,7 +271,7 @@ export default {
           layer2: this.layer2
         })
         .then((response) => {
-          // let response = dataList
+          //   let response = dataList
           d3.select(this.$refs.scatterPlot).selectAll('*').remove()
           d3.select(this.$refs.chartContainer).selectAll('*').remove()
           d3.select(this.$refs.features1).selectAll('*').remove()
@@ -282,8 +290,6 @@ export default {
 
           this.drawChart()
           this.drawHistogram()
-
-          // this.click_node()
         })
     },
     clickNode(data) {
@@ -292,6 +298,46 @@ export default {
     },
     //点击单个节点，淡化其它节点
     click_node() {
+      if (!this.brush) {
+        this.click_dimensional([]).then((res) => {
+          let nodes = [
+            ...res.result_nodes.start,
+            ...res.result_nodes['first order'],
+            ...res.result_nodes['second order']
+          ]
+          if (this.labelIndex == 0) {
+            this.guidanceColors = nodes.reduce((pre, item) => {
+              pre.push({
+                id: item,
+                colors: [
+                  this.colors(this.trueLabel[item]),
+                  this.scatter1colors[item],
+                  this.scatter2colors[item]
+                ]
+              })
+              return pre
+            }, [])
+          } else if (this.labelIndex == 1) {
+            this.guidanceColors = nodes.reduce((pre, item) => {
+              pre.push({
+                id: item,
+                colors: [this.colors(this.trueLabel[item]), this.colors(this.trueLabel[item])]
+              })
+              return pre
+            }, [])
+          } else if (this.labelIndex == 2) {
+            this.guidanceColors = nodes.reduce((pre, item) => {
+              pre.push({
+                id: item,
+                colors: [this.colors(this.trueLabel[item]), this.colors(this.Label1[item])]
+              })
+              return pre
+            }, [])
+          }
+        })
+      }
+      //   let response = data3
+
       this.$axios
         .post('/userapi/click_node/', {
           id: this.click_id,
@@ -382,13 +428,17 @@ export default {
       })
     },
     click_dimensional(id) {
-      this.$axios
-        .post('/userapi/k_hop/', {
-          id: id
-        })
-        .then((response) => {
-          this.forceData = response.data
-        })
+      return new Promise((resolve) => {
+        // this.forceData = forceData
+        this.$axios
+          .post('/userapi/k_hop/', {
+            id: id
+          })
+          .then((response) => {
+            this.forceData = response.data
+            resolve(this.forceData)
+          })
+      })
     },
     handleFileChange(event) {
       const file = event.target.files[0]
@@ -398,6 +448,7 @@ export default {
           this.trueLabel = results.data[0]
           this.Label1 = results.data[this.epoch1]
           this.Label2 = results.data[this.epoch2]
+          console.log(results)
         }
       })
     },
@@ -498,6 +549,7 @@ export default {
       let svg = d3.select(this.$refs.scatterPlot).attr('width', svgWidth).attr('height', svgHeight)
       this.brushSvg = svg
       const colors = d3.scaleOrdinal(d3.schemeAccent)
+      this.colors = colors
       // 创建散点图1的分组
       const scatter1Group = svg
         .append('g')
@@ -559,10 +611,11 @@ export default {
         .attr('data-index', (_, i) => i) // 将索引作为自定义属性绑定到元素上
         .style('fill', (d, i) => {
           let originalColor = ''
-          if (sf.labelIndex === 0) originalColor = getPointColor(d, i)
-          else if (sf.labelIndex === 1) originalColor = colors(sf.trueLabel[d.index])
+          if (sf.labelIndex === 0) {
+            originalColor = getPointColor(d, i)
+            this.scatter1colors[d.index] = originalColor
+          } else if (sf.labelIndex === 1) originalColor = colors(sf.trueLabel[d.index])
           else originalColor = colors(sf.Label1[d.index])
-
           if (sf.click_id === -1) {
             return originalColor
           } else {
@@ -586,9 +639,12 @@ export default {
         .attr('data-index', (_, i) => i) // 将索引作为自定义属性绑定到元素上
         .style('fill', (d, i) => {
           let originalColor = ''
-          if (sf.labelIndex === 0) originalColor = getPointColor(d, i)
-          else if (sf.labelIndex === 1) originalColor = colors(sf.trueLabel[d.index])
+          if (sf.labelIndex === 0) {
+            originalColor = getPointColor(d, i)
+            this.scatter2colors[d.index] = originalColor
+          } else if (sf.labelIndex === 1) originalColor = colors(sf.trueLabel[d.index])
           else originalColor = colors(sf.Label1[d.index])
+
           if (sf.click_id === -1) {
             return originalColor
           } else {

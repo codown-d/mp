@@ -1,6 +1,21 @@
 <template>
   <div>
-    <svg ref="forceGuidance"></svg>
+    <svg ref="forceGuidance">
+      <defs v-if="!this.brush">
+        <!-- 定义一个线性渐变 -->
+        <linearGradient
+          :id="'half_' + item.id"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="0%"
+          v-for="item in guidanceColors"
+        >
+          <stop offset="50%" :style="'stop-color: ' + item.colors[0] + '; stop-opacity: 1'" />
+          <stop offset="50%" :style="'stop-color: ' + item.colors[1] + '; stop-opacity: 1'" />
+        </linearGradient>
+      </defs>
+    </svg>
   </div>
 </template>
 
@@ -20,6 +35,14 @@ export default {
     brushNode: {
       type: Array,
       default: []
+    },
+    guidanceColors: {
+      type: Object,
+      default: []
+    },
+    brush: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -34,18 +57,20 @@ export default {
   mounted() {
     this.init()
   },
-
   watch: {
+    guidanceColors: {
+      handler(newValue) {
+        this.drawChart()
+      }
+    },
     result_edge: {
       handler(newValue) {
         this.links = [...newValue]
-        console.log(this.links)
         this.drawChart()
       }
     },
     result_nodes: {
       handler(newValue) {
-        console.log(123,newValue)
         this.nodes = Object.keys(newValue).reduce((pre, item) => {
           pre.push(
             newValue[item].map((ite) => ({
@@ -59,6 +84,7 @@ export default {
     },
     brushNode: {
       handler(newValue) {
+        console.log(brushNode)
         this.drawChart()
       }
     }
@@ -71,8 +97,8 @@ export default {
         .attr('height', this.height)
     },
     drawChart() {
-      this.svg.selectAll('*').remove()
-      console.log(this.nodes)
+      this.svg.selectAll('g.links').remove()
+      this.svg.selectAll('g.nodes').remove()
       if (this.nodes.length == 0) return
       let rects = [
         {
@@ -105,10 +131,10 @@ export default {
         .attr('height', (d) => d.height) // 矩形的高度
         .attr('stroke', 'black') // 边框颜色
         .attr('fill', 'transparent') // 填充颜色
-        this.svg.append('g').attr('class', 'links')
+      this.svg.append('g').attr('class', 'links')
       const links = this.links
       let drawForceSimulation = async () => {
-        let allNodes = JSON.parse(JSON.stringify(this.nodes)) 
+        let allNodes = JSON.parse(JSON.stringify(this.nodes))
         let promise = Promise.all(
           allNodes.map((nodes, index) => {
             return new Promise((resolve, reject) => {
@@ -129,12 +155,16 @@ export default {
                 .data(nodes)
                 .enter()
                 .append('circle')
-                .attr('r', (d) => 6)
+                .attr('r', (d) => 10)
                 .attr('data-index', (d) => {
                   return d.id
                 })
-                .attr('fill', (d) => {
-                  return this.brushNode.includes(d.id) ? 'green' : 'gray'
+                .attr('fill', (d, index) => {
+                  return this.brush
+                    ? this.brushNode.includes(d.id)
+                      ? 'green'
+                      : 'gray'
+                    : `url(#half_${d.id})`
                 })
               simulation.on('tick', () => {
                 node
@@ -155,7 +185,7 @@ export default {
       }
       let drawLinks = () => {
         let nodeObj = {}
-        this.svg.select('g.links').selectAll("*").remove()
+        this.svg.select('g.links').selectAll('*').remove()
         this.svg.selectAll('circle').each(function () {
           const cx = d3.select(this).attr('cx')
           const cy = d3.select(this).attr('cy')
@@ -166,17 +196,18 @@ export default {
           let node2 = nodeObj[link.target]
           return { ...link, x1: node1.x, y1: node1.y, x2: node2.x, y2: node2.y }
         })
-        this.svg.select('g.links')
-          .selectAll("line")
+        this.svg
+          .select('g.links')
+          .selectAll('line')
           .data(linesData)
           .enter()
-          .append("line")
-          .attr("x1", d => d.x1)
-          .attr("y1", d => d.y1)
-          .attr("x2", d => d.x2)
-          .attr("y2", d => d.y2)
-          .attr("stroke", "gray")
-          .attr("stroke-width", 1);
+          .append('line')
+          .attr('x1', (d) => d.x1)
+          .attr('y1', (d) => d.y1)
+          .attr('x2', (d) => d.x2)
+          .attr('y2', (d) => d.y2)
+          .attr('stroke', 'gray')
+          .attr('stroke-width', 1)
       }
       drawForceSimulation().then(drawLinks)
       function dragStarted(simulation) {
