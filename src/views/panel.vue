@@ -382,6 +382,7 @@ export default {
         })
         return nodeObj
       })
+      scatterSvg.selectAll('.connecting-line').remove()
       Object.keys(nodeArrObj[0]).forEach((nodes, ite) => {
         let sourceNode = nodeArrObj[0][nodes]
         let targetNode = nodeArrObj[1][nodes]
@@ -643,7 +644,7 @@ export default {
             originalColor = getPointColor(d, i)
             this.scatter2colors[d.index] = originalColor
           } else if (sf.labelIndex === 1) originalColor = colors(sf.trueLabel[d.index])
-          else originalColor = colors(sf.Label1[d.index])
+          else originalColor = colors(sf.Label2[d.index])
 
           if (sf.click_id === -1) {
             return originalColor
