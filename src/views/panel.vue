@@ -110,7 +110,7 @@
           <v-btn @click="this.trueDraw" style="margin-left: 8px">true label</v-btn>
           <v-btn @click="this.predictedDraw">predicted label</v-btn>
         </v-btn-toggle>
-        <v-btn @click="this.clickDraw" style="margin-left: 10px; margin-right: 20px">reset</v-btn>
+        <v-btn @click="clickDraw" style="margin-left: 10px; margin-right: 20px">reset</v-btn>
         <v-switch
           style="height: 44px; margin-top: -10px"
           label="brush"
@@ -135,7 +135,6 @@
         :result_edge="forceData.result_edge"
         :result_nodes="forceData.result_nodes"
         :brushNode="brushNode"
-        :brush="brush"
         :guidanceColors="guidanceColors"
       ></force-guidance>
       <svg ref="scatterPlot" style="height: 450px" class="scatterPlot"></svg>
@@ -224,7 +223,7 @@ export default {
         result_edge: [],
         result_nodes: {}
       },
-      guidanceColors: {},
+      guidanceColors: [],
       colors: [],
       scatter1colors: {},
       scatter2colors: {}
@@ -236,91 +235,84 @@ export default {
 
   methods: {
     brushInit() {
-      this.brushList = []
-      this.brushDraw()
+      setTimeout(() => {
+        console.log(123)
+        this.brushList = []
+        this.forceData = {
+          result_edge: [],
+          result_nodes: {}
+        }
+        this.click_id = -1
+        this.brushSvg.selectAll('*').remove()
+        this.drawChart()
+      }, 0)
     },
     renderHistoricalDataset() {
       this.$refs.childComponent1.renderHistoricalDataset()
     },
     get_lns() {
-      // this.$axios
-      //   .post('/userapi/get_lns/', {
-      //     k: this.value,
-      //     distance: this.distance,
-      //     from: this.sliderValues[0],
-      //     to: this.sliderValues[1],
-      //     epoch1: this.epoch1,
-      //     epoch2: this.epoch2,
-      //     layer1: this.layer1,
-      //     layer2: this.layer2
-      //   })
-      //   .then((response) => {
-            let response = dataList
-          d3.select(this.$refs.scatterPlot).selectAll('*').remove()
-          d3.select(this.$refs.chartContainer).selectAll('*').remove()
-          d3.select(this.$refs.features1).selectAll('*').remove()
-          d3.select(this.$refs.features2).selectAll('*').remove()
-          this.collected = []
-          this.scatter1 = response.data.matrix1
-          this.scatter2 = response.data.matrix2
-          this.lns = response.data.lns
-          this.features1 = response.data.features1
-          this.features2 = response.data.features2
-          this.density1 = response.data.density1
-          this.density2 = response.data.density2
-          this.click_id = -1
+      this.$axios
+        .post('/userapi/get_lns/', {
+          k: this.value,
+          distance: this.distance,
+          from: this.sliderValues[0],
+          to: this.sliderValues[1],
+          epoch1: this.epoch1,
+          epoch2: this.epoch2,
+          layer1: this.layer1,
+          layer2: this.layer2
+        })
+        .then((response) => {
+      // let response = dataList
+      d3.select(this.$refs.scatterPlot).selectAll('*').remove()
+      d3.select(this.$refs.chartContainer).selectAll('*').remove()
+      d3.select(this.$refs.features1).selectAll('*').remove()
+      d3.select(this.$refs.features2).selectAll('*').remove()
+      this.scatter1 = response.data.matrix1
+      this.scatter2 = response.data.matrix2
+      this.lns = response.data.lns
+      this.features1 = response.data.features1
+      this.features2 = response.data.features2
+      this.density1 = response.data.density1
+      this.density2 = response.data.density2
+      this.click_id = -1
 
-          this.dataList = response.data
+      this.dataList = response.data
 
-          this.drawChart()
-          this.drawHistogram()
-        // })
+      this.drawChart()
+      this.drawHistogram()
+      })
     },
     clickNode(data) {
       this.click_id = data.nodeId
       this.click_node()
     },
+    click_dimensionalFn(res) {
+      console.log(res)
+      let nodes = [
+        ...res.result_nodes.start,
+        ...res.result_nodes['first order'],
+        ...res.result_nodes['second order']
+      ]
+      if (this.labelIndex == 2) {
+        this.guidanceColors = nodes.reduce((pre, item) => {
+          pre.push({
+            id: item,
+            colors: [
+              this.colors(this.Label1[item]),
+              this.colors(this.Label2[item]),
+              this.colors(this.trueLabel[item])
+            ]
+          })
+          return pre
+        }, [])
+        console.log(this.guidanceColors)
+      }
+    },
     //点击单个节点，淡化其它节点
     click_node() {
-      if (!this.brush) {
-        this.click_dimensional([]).then((res) => {
-          let nodes = [
-            ...res.result_nodes.start,
-            ...res.result_nodes['first order'],
-            ...res.result_nodes['second order']
-          ]
-          if (this.labelIndex == 0) {
-            this.guidanceColors = nodes.reduce((pre, item) => {
-              pre.push({
-                id: item,
-                colors: [
-                  this.colors(this.trueLabel[item]),
-                  this.scatter1colors[item],
-                  this.scatter2colors[item]
-                ]
-              })
-              return pre
-            }, [])
-          } else if (this.labelIndex == 1) {
-            this.guidanceColors = nodes.reduce((pre, item) => {
-              pre.push({
-                id: item,
-                colors: [this.colors(this.trueLabel[item]), this.colors(this.trueLabel[item])]
-              })
-              return pre
-            }, [])
-          } else if (this.labelIndex == 2) {
-            this.guidanceColors = nodes.reduce((pre, item) => {
-              pre.push({
-                id: item,
-                colors: [this.colors(this.trueLabel[item]), this.colors(this.Label1[item])]
-              })
-              return pre
-            }, [])
-          }
-        })
-      }
-      //   let response = data3
+      this.click_dimensional([this.click_id]).then((res) => this.click_dimensionalFn(res))
+      // let response = data3
 
       this.$axios
         .post('/userapi/click_node/', {
@@ -331,10 +323,10 @@ export default {
           layer2: this.layer2
         })
         .then((response) => {
-          this.links = response.data.link
-          this.nodes = response.data.node
-          this.showMatrixChart()
-        })
+      this.links = response.data.link
+      this.nodes = response.data.node
+      this.showMatrixChart()
+      })
     },
     showMatrixChart() {
       let nodeObj = this.nodes.reduce((pre, item) => {
@@ -342,7 +334,7 @@ export default {
         return pre
       }, {})
       let nodeIds = Object.keys(nodeObj).map((item) => Number(item))
-      let scatterSvg = d3.select(this.$refs.scatterPlot)
+      let scatterSvg = this.brushSvg
       scatterSvg.selectAll('circle').each(function (item) {
         const element = d3.select(this)
         let i = element.attr('data-index')
@@ -379,7 +371,7 @@ export default {
             .attr('x2', targetNode.x + this.margin.left * 2 + 500)
             .attr('y2', targetNode.y + this.margin.top)
             .attr('fill', 'none')
-            .style('stroke', 'gry')
+            .style('stroke', '#aaa')
             .style('stroke-width', 1)
         }
       })
@@ -414,15 +406,15 @@ export default {
     },
     click_dimensional(id) {
       return new Promise((resolve) => {
-        this.forceData = forceData
-        // this.$axios
-        //   .post('/userapi/k_hop/', {
-        //     id: id
-        //   })
-        //   .then((response) => {
-        //     this.forceData = response.data
-            resolve(this.forceData)
-          // })
+        // this.forceData = forceData
+        this.$axios
+          .post('/userapi/k_hop/', {
+            id: id
+          })
+          .then((response) => {
+            this.forceData = response.data
+        resolve(this.forceData)
+        })
       })
     },
     handleFileChange(event) {
@@ -433,7 +425,6 @@ export default {
           this.trueLabel = results.data[0]
           this.Label1 = results.data[this.epoch1]
           this.Label2 = results.data[this.epoch2]
-          console.log(results)
         }
       })
     },
@@ -454,22 +445,8 @@ export default {
     },
     clickDraw() {
       this.brush = false
-      this.click_id = -1
-      d3.select(this.$refs.scatterPlot).selectAll('*').remove()
-      this.collected = []
-      this.drawChart()
+      this.brushInit()
     },
-    brushDraw() {
-      this.brush = !this.brush
-      let el = this.$refs.scatterPlot
-      d3.select(el).selectAll('.brush').on('start', null).on('brush', null).on('end', null)
-      d3.select(el).selectAll('.brush').remove()
-      d3.select(el).selectAll('*').remove()
-      this.collected = []
-      this.drawChart()
-    },
-
-    // 画原图
     requestForceGraphData() {
       this.$axios.post('/userapi/get_db_graph/', {}).then((response) => {
         this.dataList = response.data
@@ -492,7 +469,6 @@ export default {
           d3.select(this.$refs.chartContainer).selectAll('*').remove()
           d3.select(this.$refs.features1).selectAll('*').remove()
           d3.select(this.$refs.features2).selectAll('*').remove()
-          this.collected = []
           this.scatter1 = response.data.matrix1
           this.scatter2 = response.data.matrix2
           this.lns = response.data.lns
@@ -514,7 +490,7 @@ export default {
       const density2 = this.density2
 
       // 创建SVG绘图区域的尺寸
-      const width = 500
+      const width = 800
       const height = 400
       const margin = { top: 20, right: 40, bottom: 20, left: 40 }
       this.margin = margin
@@ -531,17 +507,30 @@ export default {
       // 创建颜色比例尺
       const labScale = d3.scaleLinear().domain([min, max]).range([-160, 160])
       // 创建SVG元素
-      let svg = d3.select(this.$refs.scatterPlot).attr('width', svgWidth).attr('height', svgHeight)
-      this.brushSvg = svg
+      let svgScatter = d3
+        .select(this.$refs.scatterPlot)
+        .attr('width', svgWidth)
+        .attr('height', svgHeight)
+        .call(
+          d3
+            .zoom()
+            .scaleExtent([0.1, 4])
+            .on('zoom', (event) => {
+              if(sf.brush)return;
+              let { transform } = event
+              this.brushSvg.transition().duration(10).attr('transform', transform)
+            })
+        )
+      this.brushSvg = svgScatter.append('g')
       const colors = d3.scaleOrdinal(d3.schemeAccent)
       this.colors = colors
       // 创建散点图1的分组
-      const scatter1Group = svg
+      const scatter1Group = this.brushSvg
         .append('g')
         .attr('transform', `translate(${margin.left}, ${margin.top})`)
 
       // 创建散点图2的分组
-      const scatter2Group = svg
+      const scatter2Group = this.brushSvg
         .append('g')
         .attr('transform', `translate(${width + margin.left * 2}, ${margin.top})`)
 
@@ -592,15 +581,26 @@ export default {
         .attr('class', 'scatter1')
         .attr('cx', (d) => xScale1(d.x))
         .attr('cy', (d) => yScale1(d.y))
-        .attr('r', 5)
+        .attr('r', 2)
         .attr('data-index', (_, i) => i) // 将索引作为自定义属性绑定到元素上
+        .style('stroke', (d) => {
+          if (sf.labelIndex === 2) {
+            return colors(sf.trueLabel[d.index])
+          } else {
+            return 'none'
+          }
+        })
+        .style('stroke-width', 2)
         .style('fill', (d, i) => {
           let originalColor = ''
           if (sf.labelIndex === 0) {
             originalColor = getPointColor(d, i)
             this.scatter1colors[d.index] = originalColor
-          } else if (sf.labelIndex === 1) originalColor = colors(sf.trueLabel[d.index])
-          else originalColor = colors(sf.Label1[d.index])
+          } else if (sf.labelIndex === 1) {
+            originalColor = colors(sf.trueLabel[d.index])
+          } else {
+            originalColor = colors(sf.Label1[d.index])
+          }
           if (sf.click_id === -1) {
             return originalColor
           } else {
@@ -609,7 +609,7 @@ export default {
                 return originalColor
               }
             }
-            return d3.color(originalColor).copy({ opacity: 0.1 })
+            return d3.color(originalColor).copy({ opacity: 1 })
           }
         })
       let sg2 = scatter2Group
@@ -620,15 +620,26 @@ export default {
         .attr('class', 'scatter2')
         .attr('cx', (d) => xScale2(d.x))
         .attr('cy', (d) => yScale2(d.y))
-        .attr('r', 5)
+        .attr('r', 2)
         .attr('data-index', (_, i) => i) // 将索引作为自定义属性绑定到元素上
+        .style('stroke', (d) => {
+          if (sf.labelIndex === 2) {
+            return colors(sf.trueLabel[d.index])
+          } else {
+            return 'none'
+          }
+        })
+        .style('stroke-width', 2)
         .style('fill', (d, i) => {
           let originalColor = ''
           if (sf.labelIndex === 0) {
             originalColor = getPointColor(d, i)
             this.scatter2colors[d.index] = originalColor
-          } else if (sf.labelIndex === 1) originalColor = colors(sf.trueLabel[d.index])
-          else originalColor = colors(sf.Label2[d.index])
+          } else if (sf.labelIndex === 1) {
+            originalColor = colors(sf.trueLabel[d.index])
+          } else {
+            originalColor = colors(sf.Label2[d.index])
+          }
 
           if (sf.click_id === -1) {
             return originalColor
@@ -638,12 +649,15 @@ export default {
                 return originalColor
               }
             }
-            return d3.color(originalColor).copy({ opacity: 0.1 })
+            return d3.color(originalColor).copy({ opacity: 1 })
           }
         })
       if (sf.brush === false) {
         sg1.on('mouseover', handleMouseOver).on('mouseout', handleMouseOut).on('click', handleClick)
         sg2.on('mouseover', handleMouseOver).on('mouseout', handleMouseOut).on('click', handleClick)
+      } else {
+        sg1.on('mouseover', null).on('mouseout', null).on('click', null)
+        sg2.on('mouseover', null).on('mouseout', null).on('click', null)
       }
       function getPointColor(d, i) {
         const a = labScale(scatter1[i].x)
@@ -659,9 +673,8 @@ export default {
 
         const node2X = xScale2(scatter2[i].x)
         const node2Y = yScale2(scatter2[i].y)
-
         // 绘制线条
-        svg
+        sf.brushSvg
           .append('line')
           .attr('class', 'connecting-line')
           .attr('x1', node1X + margin.left)
@@ -672,7 +685,7 @@ export default {
           .style('stroke-width', 1)
 
         // 选择对应的点元素并设置边界样式
-        svg
+        sf.brushSvg
           .append('circle')
           .attr('class', 'connecting-c')
           .attr('cx', node1X + margin.left)
@@ -682,7 +695,7 @@ export default {
           .attr('stroke', 'red')
           .attr('stroke-width', 2)
 
-        svg
+        sf.brushSvg
           .append('circle')
           .attr('class', 'connecting-c')
           .attr('cx', node2X + margin.left + width + margin.right)
@@ -709,13 +722,14 @@ export default {
             [0, 0],
             [width + margin.left + width + margin.right, height + margin.bottom]
           ])
-          // .on('start', () => {
-          //   if (this.brushList.length == 2) {
-          //     this.brushList.shift()
-          //   }
-          // })
+          .on('start', () => {
+            // if (this.brushList.length == 2) {
+            //   this.brushList.shift()
+            // }
+          })
           .on('end', (event) => {
             const selection = event.selection
+            console.log(selection)
             const [[x0, y0], [x1, y1]] = selection
             let result = [scatter1Group.selectAll('circle'), scatter2Group.selectAll('circle')].map(
               (items, index) => {
@@ -733,11 +747,13 @@ export default {
                 let arr = nodes
                   .map((item) => d3.select(item).attr('data-index'))
                   .map((item) => Number(item))
-                this.brushList=[{
-                  type: index,
-                  dataIndex: arr,
-                  nodes: nodes
-                }]
+                this.brushList = [
+                  {
+                    type: index,
+                    dataIndex: arr,
+                    nodes: nodes
+                  }
+                ]
               }
             })
             this.renderBrush()
@@ -782,6 +798,7 @@ export default {
     },
     // 分布图
     drawHistogram() {
+      return;
       const data = this.lns
       const features1 = this.features1
       const features2 = this.features2
@@ -884,14 +901,14 @@ export default {
       const intervals = [0, 0.2, 0.4, 0.6, 0.8, 1.0]
       const counts = [0, 0, 0, 0, 0, 0]
 
-      data.forEach((value) => {
-        for (let i = 0; i < intervals.length; i++) {
-          if (value * 100 <= intervals[i] * 100) {
-            counts[i]++
-            break
-          }
-        }
-      })
+      // data.forEach((value) => {
+      //   for (let i = 0; i < intervals.length; i++) {
+      //     if (value * 100 <= intervals[i] * 100) {
+      //       counts[i]++
+      //       break
+      //     }
+      //   }
+      // })
 
       return counts
     },
@@ -992,12 +1009,15 @@ export default {
   },
   computed: {
     brushNode() {
-      if (this.brushList.length > 0) {
-        this.click_dimensional(this.brushList[0].dataIndex)
-      }
+      return []
     }
   },
   watch: {
+    brushList(newValue, oldValue) {
+      newValue.length &&
+        this.click_dimensional(newValue[0].dataIndex).then((res) => this.click_dimensionalFn(res))
+    },
+
     epoch1(newValue, oldValue) {
       if (this.Label != null) {
         Papa.parse(this.Label, {
@@ -1027,7 +1047,7 @@ svg {
 }
 
 .un-highlight {
-  fill-opacity: 0.1;
+  fill-opacity: 1;
 }
 
 .highlight {

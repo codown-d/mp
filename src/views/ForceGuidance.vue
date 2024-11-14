@@ -1,7 +1,7 @@
 <template>
   <div>
     <svg ref="forceGuidance">
-      <defs v-if="!this.brush">
+      <defs>
         <!-- 定义一个线性渐变 -->
         <linearGradient
           :id="'half_' + item.id"
@@ -51,7 +51,8 @@ export default {
       links: [],
       width: 1400,
       height: 600,
-      svg: null
+      svg: null,
+      actNode: ''
     }
   },
   mounted() {
@@ -84,7 +85,6 @@ export default {
     },
     brushNode: {
       handler(newValue) {
-        console.log(brushNode)
         this.drawChart()
       }
     }
@@ -97,6 +97,7 @@ export default {
         .attr('height', this.height)
     },
     drawChart() {
+      this.actNode = ''
       this.svg.selectAll('g.links').remove()
       this.svg.selectAll('g.nodes').remove()
       if (this.nodes.length == 0) return
@@ -159,6 +160,13 @@ export default {
                 .attr('data-index', (d) => {
                   return d.id
                 })
+                .attr('stroke-width', 6)
+                .attr('stroke', (d, i) => {
+                  let node = this.guidanceColors.filter((item) => item.id == d.id)[0]
+                  if (!node) return
+                  let color = node.colors.length > 2 ? node.colors[2] : ''
+                  return this.brush ? '' : color
+                })
                 .attr('fill', (d, index) => {
                   return this.brush
                     ? this.brushNode.includes(d.id)
@@ -166,6 +174,7 @@ export default {
                       : 'gray'
                     : `url(#half_${d.id})`
                 })
+                .on('click', (event, d) => this.handleClick(d))
               simulation.on('tick', () => {
                 node
                   .attr('cx', (d) => {
@@ -183,33 +192,45 @@ export default {
         )
         return promise
       }
-      let drawLinks = () => {
-        let nodeObj = {}
-        this.svg.select('g.links').selectAll('*').remove()
-        this.svg.selectAll('circle').each(function () {
-          const cx = d3.select(this).attr('cx')
-          const cy = d3.select(this).attr('cy')
-          nodeObj[d3.select(this).attr('data-index')] = { x: cx, y: cy }
+      drawForceSimulation().then(this.drawLinks)
+    },
+
+    drawLinks() {
+      let nodeObj = {}
+      this.svg.select('g.links').selectAll('*').remove()
+      this.svg.selectAll('circle').each(function () {
+        const cx = d3.select(this).attr('cx')
+        const cy = d3.select(this).attr('cy')
+        nodeObj[d3.select(this).attr('data-index')] = { x: cx, y: cy }
+      })
+      let linesData = this.links.map((link) => {
+        let node1 = nodeObj[link.source]
+        let node2 = nodeObj[link.target]
+        return { ...link, x1: node1.x, y1: node1.y, x2: node2.x, y2: node2.y }
+      })
+      this.svg
+        .select('g.links')
+        .selectAll('line')
+        .data(linesData)
+        .enter()
+        .append('line')
+        .attr('x1', (d) => d.x1)
+        .attr('y1', (d) => d.y1)
+        .attr('x2', (d) => d.x2)
+        .attr('y2', (d) => d.y2)
+        .attr('stroke', (d) => {
+          if ([d.source, d.target].includes(this.actNode)) {
+            return '#ff0000'
+          } else {
+            return 'gray'
+          }
         })
-        let linesData = links.map((link) => {
-          let node1 = nodeObj[link.source]
-          let node2 = nodeObj[link.target]
-          return { ...link, x1: node1.x, y1: node1.y, x2: node2.x, y2: node2.y }
-        })
-        this.svg
-          .select('g.links')
-          .selectAll('line')
-          .data(linesData)
-          .enter()
-          .append('line')
-          .attr('x1', (d) => d.x1)
-          .attr('y1', (d) => d.y1)
-          .attr('x2', (d) => d.x2)
-          .attr('y2', (d) => d.y2)
-          .attr('stroke', 'gray')
-          .attr('stroke-width', 1)
-      }
-      drawForceSimulation().then(drawLinks)
+        .attr('stroke-width', 1)
+    },
+    handleClick(d) {
+      this.actNode = d.id
+
+      this.drawLinks()
     }
   }
 }
@@ -220,7 +241,6 @@ svg {
 }
 
 line {
-  stroke: #999;
   stroke-width: 2;
 }
 

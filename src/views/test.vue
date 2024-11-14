@@ -23,7 +23,6 @@ export default {
          // this.list.push(results.data)
         }
       })
-      console.log(this.list)
     }
   }
 }

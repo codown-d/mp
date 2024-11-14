@@ -68,7 +68,6 @@ export default {
     renderHistoricalDataset() {
       const colors0 = d3.scaleOrdinal(d3.schemeAccent)
       let { links, nodes } = this.nodesStorage
-      console.log(nodes)
       if(!nodes)return;
       const nodeMap = nodes.reduce((pre, item) => {
         pre[item.id] = item
