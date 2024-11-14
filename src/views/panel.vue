@@ -73,8 +73,7 @@
         >
       </div>
       <div style="margin-top: 10px">
-        <v-btn @click="clearBrush(0)" style="margin-right: 10px; width: 120px">清除brush1</v-btn>
-        <v-btn @click="clearBrush(1)" style="margin-right: 10px; width: 120px">清除brush2</v-btn>
+        <v-btn @click="brushInit" style="margin-right: 10px; width: 120px">清除brush</v-btn>
       </div>
 
       <v-card style="width: 270px; height: 200px; margin-top: 10px">
@@ -240,38 +239,23 @@ export default {
       this.brushList = []
       this.brushDraw()
     },
-    clearBrush(n) {
-      this.links = []
-      this.nodes = []
-      if (n == 0) {
-        this.forceData = {
-          result_edge: [],
-          result_nodes: {}
-        }
-        this.brushList.shift()
-      } else {
-        this.brushList.pop()
-      }
-
-      this.renderBrush()
-    },
     renderHistoricalDataset() {
       this.$refs.childComponent1.renderHistoricalDataset()
     },
     get_lns() {
-      this.$axios
-        .post('/userapi/get_lns/', {
-          k: this.value,
-          distance: this.distance,
-          from: this.sliderValues[0],
-          to: this.sliderValues[1],
-          epoch1: this.epoch1,
-          epoch2: this.epoch2,
-          layer1: this.layer1,
-          layer2: this.layer2
-        })
-        .then((response) => {
-          //   let response = dataList
+      // this.$axios
+      //   .post('/userapi/get_lns/', {
+      //     k: this.value,
+      //     distance: this.distance,
+      //     from: this.sliderValues[0],
+      //     to: this.sliderValues[1],
+      //     epoch1: this.epoch1,
+      //     epoch2: this.epoch2,
+      //     layer1: this.layer1,
+      //     layer2: this.layer2
+      //   })
+      //   .then((response) => {
+            let response = dataList
           d3.select(this.$refs.scatterPlot).selectAll('*').remove()
           d3.select(this.$refs.chartContainer).selectAll('*').remove()
           d3.select(this.$refs.features1).selectAll('*').remove()
@@ -290,7 +274,7 @@ export default {
 
           this.drawChart()
           this.drawHistogram()
-        })
+        // })
     },
     clickNode(data) {
       this.click_id = data.nodeId
@@ -430,15 +414,15 @@ export default {
     },
     click_dimensional(id) {
       return new Promise((resolve) => {
-        // this.forceData = forceData
-        this.$axios
-          .post('/userapi/k_hop/', {
-            id: id
-          })
-          .then((response) => {
-            this.forceData = response.data
+        this.forceData = forceData
+        // this.$axios
+        //   .post('/userapi/k_hop/', {
+        //     id: id
+        //   })
+        //   .then((response) => {
+        //     this.forceData = response.data
             resolve(this.forceData)
-          })
+          // })
       })
     },
     handleFileChange(event) {
@@ -725,11 +709,11 @@ export default {
             [0, 0],
             [width + margin.left + width + margin.right, height + margin.bottom]
           ])
-          .on('start', () => {
-            if (this.brushList.length == 2) {
-              this.brushList.shift()
-            }
-          })
+          // .on('start', () => {
+          //   if (this.brushList.length == 2) {
+          //     this.brushList.shift()
+          //   }
+          // })
           .on('end', (event) => {
             const selection = event.selection
             const [[x0, y0], [x1, y1]] = selection
@@ -749,11 +733,11 @@ export default {
                 let arr = nodes
                   .map((item) => d3.select(item).attr('data-index'))
                   .map((item) => Number(item))
-                this.brushList.push({
+                this.brushList=[{
                   type: index,
                   dataIndex: arr,
                   nodes: nodes
-                })
+                }]
               }
             })
             this.renderBrush()
@@ -1010,11 +994,6 @@ export default {
     brushNode() {
       if (this.brushList.length > 0) {
         this.click_dimensional(this.brushList[0].dataIndex)
-      }
-      if (this.brushList.length > 1) {
-        return this.brushList[1].dataIndex
-      } else {
-        return []
       }
     }
   },
