@@ -131,12 +131,30 @@
           ></chart-plot>
         </div>
       </div>
-      <force-guidance
-        :result_edge="forceData.result_edge"
-        :result_nodes="forceData.result_nodes"
-        :brushNode="brushNode"
-        :guidanceColors="guidanceColors"
-      ></force-guidance>
+      <a-tabs>
+        <a-tab-pane key="1" tab="策略1">
+          <force-guidance
+            :result_edge="forceData.result_edge"
+            :result_nodes="forceData.result_nodes"
+            :brushNode="brushNode"
+            :guidanceColors="guidanceColors"
+          ></force-guidance>
+        </a-tab-pane>
+        <!-- <a-tab-pane key="2"  tab="策略2">
+          <force-guidance
+            :result_edge="forceData.result_edge"
+            :result_nodes="forceData.result_nodes"
+            :brushNode="brushNode"
+            :guidanceColors="guidanceColors"
+          ></force-guidance>
+        </a-tab-pane> -->
+      </a-tabs>
+
+      <div>
+        <a-input v-model:value="inputVal" placeholder="Basic usage" style="width: 200px" />
+        <span v-if="click_id != -1">节点id：{{ click_id }}</span>
+      </div>
+
       <svg ref="scatterPlot" style="height: 450px" class="scatterPlot"></svg>
       <div style="display: flex">
         <v-card style="height: 190px; width: 300px; margin-right: 150px; margin-left: 150px">
@@ -164,7 +182,8 @@ import data3 from '@/views/data3.js'
 
 import ChartPlot from './ChartPlot.vue'
 import ForceGuidance from './ForceGuidance.vue'
-
+let scale = 1
+const scaleFactor = 1.1 // 每次滚动放大的比例
 export default {
   components: {
     'a-slider': Slider,
@@ -174,6 +193,7 @@ export default {
   },
   data() {
     return {
+      inputVal: '',
       forceChart: null,
       forceSvg: null,
       text: 0,
@@ -226,7 +246,8 @@ export default {
       guidanceColors: [],
       colors: [],
       scatter1colors: {},
-      scatter2colors: {}
+      scatter2colors: {},
+      transform: null
     }
   },
   mounted() {
@@ -251,6 +272,7 @@ export default {
       this.$refs.childComponent1.renderHistoricalDataset()
     },
     get_lns() {
+      // let response = dataList
       this.$axios
         .post('/userapi/get_lns/', {
           k: this.value,
@@ -263,7 +285,6 @@ export default {
           layer2: this.layer2
         })
         .then((response) => {
-      // let response = dataList
       d3.select(this.$refs.scatterPlot).selectAll('*').remove()
       d3.select(this.$refs.chartContainer).selectAll('*').remove()
       d3.select(this.$refs.features1).selectAll('*').remove()
@@ -323,10 +344,10 @@ export default {
           layer2: this.layer2
         })
         .then((response) => {
-      this.links = response.data.link
-      this.nodes = response.data.node
-      this.showMatrixChart()
-      })
+          this.links = response.data.link
+          this.nodes = response.data.node
+          this.showMatrixChart()
+        })
     },
     showMatrixChart() {
       let nodeObj = this.nodes.reduce((pre, item) => {
@@ -490,7 +511,7 @@ export default {
       const density2 = this.density2
 
       // 创建SVG绘图区域的尺寸
-      const width = 800
+      const width = 500
       const height = 400
       const margin = { top: 20, right: 40, bottom: 20, left: 40 }
       this.margin = margin
@@ -507,20 +528,46 @@ export default {
       // 创建颜色比例尺
       const labScale = d3.scaleLinear().domain([min, max]).range([-160, 160])
       // 创建SVG元素
+      d3.select(this.$refs.scatterPlot).selectAll('*').remove()
       let svgScatter = d3
         .select(this.$refs.scatterPlot)
         .attr('width', svgWidth)
         .attr('height', svgHeight)
-        .call(
+      if (!sf.brush) {
+        svgScatter.on('wheel', null)
+        svgScatter.call(
           d3
             .zoom()
             .scaleExtent([0.1, 4])
             .on('zoom', (event) => {
-              if(sf.brush)return;
+              if (sf.brush) return
               let { transform } = event
               this.brushSvg.transition().duration(10).attr('transform', transform)
             })
         )
+      } else {
+        svgScatter
+          .on('wheel.zoom', null) // 移除 wheel 事件的 zoom 行为
+          .on('mousedown.zoom', null) // 移除鼠标按下的 zoom 行为
+          .on('mousemove.zoom', null) // 移除鼠标移动的 zoom 行为
+          .on('mouseup.zoom', null)
+        svgScatter.on('wheel', (event) => {
+          event.preventDefault()
+          const delta = event.deltaY
+          const mousePos = d3.pointer(event) // 获取鼠标的相对坐标
+          if (delta < 0) {
+            scale *= scaleFactor // 放大
+          } else {
+            scale /= scaleFactor // 缩小
+          }
+          scale = Math.max(0.1, Math.min(scale, 10))
+          const transform = d3.zoomIdentity
+            .translate(mousePos[0], mousePos[1])
+            .scale(scale)
+            .translate(-mousePos[0], -mousePos[1])
+          this.brushSvg.attr('transform', transform)
+        })
+      }
       this.brushSvg = svgScatter.append('g')
       const colors = d3.scaleOrdinal(d3.schemeAccent)
       this.colors = colors
@@ -581,7 +628,7 @@ export default {
         .attr('class', 'scatter1')
         .attr('cx', (d) => xScale1(d.x))
         .attr('cy', (d) => yScale1(d.y))
-        .attr('r', 2)
+        .attr('r', 3)
         .attr('data-index', (_, i) => i) // 将索引作为自定义属性绑定到元素上
         .style('stroke', (d) => {
           if (sf.labelIndex === 2) {
@@ -590,7 +637,7 @@ export default {
             return 'none'
           }
         })
-        .style('stroke-width', 2)
+        .style('stroke-width', 1)
         .style('fill', (d, i) => {
           let originalColor = ''
           if (sf.labelIndex === 0) {
@@ -620,7 +667,7 @@ export default {
         .attr('class', 'scatter2')
         .attr('cx', (d) => xScale2(d.x))
         .attr('cy', (d) => yScale2(d.y))
-        .attr('r', 2)
+        .attr('r', 3)
         .attr('data-index', (_, i) => i) // 将索引作为自定义属性绑定到元素上
         .style('stroke', (d) => {
           if (sf.labelIndex === 2) {
@@ -629,7 +676,7 @@ export default {
             return 'none'
           }
         })
-        .style('stroke-width', 2)
+        .style('stroke-width', 1)
         .style('fill', (d, i) => {
           let originalColor = ''
           if (sf.labelIndex === 0) {
@@ -657,7 +704,7 @@ export default {
         sg2.on('mouseover', handleMouseOver).on('mouseout', handleMouseOut).on('click', handleClick)
       } else {
         sg1.on('mouseover', null).on('mouseout', null).on('click', null)
-        sg2.on('mouseover', null).on('mouseout', null).on('click', null)
+        // sg2.on('mouseover', null).on('mouseout', null).on('click', null)
       }
       function getPointColor(d, i) {
         const a = labScale(scatter1[i].x)
@@ -716,6 +763,7 @@ export default {
       }
 
       if (sf.brush === true) {
+        console.log(123456)
         let brushIns = d3
           .brush()
           .extent([
@@ -730,6 +778,7 @@ export default {
           .on('end', (event) => {
             const selection = event.selection
             console.log(selection)
+            if (!selection) return
             const [[x0, y0], [x1, y1]] = selection
             let result = [scatter1Group.selectAll('circle'), scatter2Group.selectAll('circle')].map(
               (items, index) => {
@@ -798,7 +847,7 @@ export default {
     },
     // 分布图
     drawHistogram() {
-      return;
+      return
       const data = this.lns
       const features1 = this.features1
       const features2 = this.features2
@@ -1013,6 +1062,28 @@ export default {
     }
   },
   watch: {
+    inputVal(newValue) {
+      let numArr =
+        newValue === ''
+          ? []
+          : newValue.split(',').map((item) => {
+              return Number(item)
+            })
+      d3.select(this.$refs.scatterPlot)
+        .selectAll('circle')
+        .nodes()
+        .map((item) => {
+          const dataIndex = d3.select(item).attr('data-index')
+          let i = this.scatter1[dataIndex].index
+          d3.select(item)
+            .attr('r', (d) => {
+              return numArr.includes(i) ? 5 : 2
+            })
+            .classed('circle-blink', (d) => {
+              return numArr.includes(i) ? true : false
+            })
+        })
+    },
     brushList(newValue, oldValue) {
       newValue.length &&
         this.click_dimensional(newValue[0].dataIndex).then((res) => this.click_dimensionalFn(res))
@@ -1052,5 +1123,19 @@ svg {
 
 .highlight {
   fill-opacity: 1;
+}
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.circle-blink {
+  animation: blink 1s infinite;
 }
 </style>

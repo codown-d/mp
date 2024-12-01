@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>D3 禁用拖拽保留鼠标滚动缩放</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+      span.string {
+        color: rgb(0, 255, 34);
+      }
+
+      span.number {
+        color: rgb(25, 0, 255);
+      }
+      span.act {
+        color: red;
+      }
+    </style>
+  </head>
+
+  <body>
+    <script>
+      // 将 JSON 转换为格式化的预格式化文本
+      let obj = {
+        reqJson: {},
+        resJson: {
+          errCode: 0,
+          errMsg: 'success',
+          result: [
+            {
+              label: '主手机号',
+              phoneNum: '1##########'
+            }
+          ]
+        }
+      }
+      function addSpanToKeys(obj, arr) {
+        if (Array.isArray(obj)) {
+          return obj.map((item) => {
+            return addSpanToKeys(item,arr)
+          })
+        }
+        if (typeof obj === 'object' && obj !== null) {
+          let result = {}
+          for (let key in obj) {
+            console.log(key)
+            let flg = arr.includes(key)
+            let wrappedKey = `<span class='string ${flg?'act':''}'>${key}</span>`
+            let wrappedValue
+            if (typeof obj[key] === 'string') {
+              wrappedValue = `<span class='string'>${obj[key]}</span>`
+            } else if (typeof obj[key] === 'number') {
+              wrappedValue = `<span class='number'>${obj[key]}</span>`
+            } else if (Array.isArray(obj[key])) {
+              wrappedValue = addSpanToKeys(obj[key],arr)
+            } else {
+              wrappedValue = addSpanToKeys(obj[key],arr)
+            }
+            result[wrappedKey] = wrappedValue
+          }
+          return result
+        }
+        return obj
+      }
+
+      const jsonData = JSON.stringify(addSpanToKeys(obj, ['phoneNum']))
+      function jsonToFormattedText(json) {
+        const formattedJson = JSON.stringify(json, null, 2) // 2表示缩进的空格数
+        return `<pre>${formattedJson}</pre>`
+      }
+
+      // 获取格式化的 JSON 文本
+      const formattedJsonHtml = jsonToFormattedText(JSON.parse(jsonData))
+      document.body.innerHTML = formattedJsonHtml // 将格式化的 JSON 添加到页面
+    </script>
+  </body>
+</html>
