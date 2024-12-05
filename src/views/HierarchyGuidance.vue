@@ -4,21 +4,62 @@
     <svg ref="forceGuidance">
       <defs>
         <!-- 定义一个线性渐变 -->
-        <linearGradient :id="'half_' + item.id" x1="0%" y1="0%" x2="100%" y2="0%" v-for="item in guidanceColors">
+        <linearGradient
+          :id="'half_' + item.id"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="0%"
+          v-for="item in guidanceColors"
+        >
           <stop offset="50%" :style="'stop-color: ' + item.colors[0] + '; stop-opacity: 1'" />
           <stop offset="50%" :style="'stop-color: ' + item.colors[1] + '; stop-opacity: 1'" />
         </linearGradient>
       </defs>
-      <circle v-for="item in hierarchyNodes" :r="item.r" :cx="item.x" :cy="item.y" fill="#fff"
-        :stroke="item.children ? 'lightblue' : 'steelblue'"></circle>
+      <line
+        v-for="item in link"
+        :x1="item.x1"
+        :y1="item.y1"
+        :x2="item.x2"
+        :y2="item.y2"
+        stroke="#ddd"
+        stroke-width="1"
+      ></line>
+      <circle
+        v-for="item in hierarchyNodes"
+        :r="item.r"
+        :cx="item.x"
+        :cy="item.y"
+        :fill="item.data.id ? `url(#half_${item.data.id})` : '#fff'"
+        :stroke="item.data.colors ? item.data.colors[2] : '#ddd'"
+        :stroke-width="item.children && item.children.length > 0 ? 1 : 5"
+        @click="handleClick(item.data.id)"
+      ></circle>
+      <line
+        v-for="item in link.filter(item => item.source !== actNode && item.target !== actNode)"
+        :x1="item.x1"
+        :y1="item.y1"
+        :x2="item.x2"
+        :y2="item.y2"
+        stroke="#ddd"
+        stroke-width="1"
+      ></line>
+      <line
+        v-for="item in link.filter(item => item.source == actNode || item.target == actNode)"
+        :x1="item.x1"
+        :y1="item.y1"
+        :x2="item.x2"
+        :y2="item.y2"
+        stroke="#f00"
+        stroke-width="1"
+      ></line>
     </svg>
   </div>
 </template>
 
 <script>
 import * as d3 from 'd3'
-import { isArray } from 'lodash'
-import { findIndex, isEqual, isNumber, keys } from 'lodash'
+import { findIndex, isEqual, isNumber, keys, find } from 'lodash'
 
 export default {
   props: {
@@ -63,42 +104,42 @@ export default {
     }
   },
   mounted() {
-    this.svg = d3
-      .select(this.$refs.forceGuidance)
-      .attr('width', this.width)
-      .attr('height', this.height)
-
-    let root = d3
-      .hierarchy(this.dataList)
-      .sum((d) => d.value) // 用 `value` 决定节点大小
-      .sort((a, b) => b.value - a.value) // 按值排序
-    const pack = d3
-      .pack()
-      .size([this.width - 50, this.height - 50]) // 设置布局范围
-      .padding(10) // 圆之间的间距
-    this.hierarchyNodes = pack(root).descendants().slice(1)
-    this.hierarchyNodes.map((item) => {
-      console.log(item.data.type)
-      if (item.data['type']&&item.data.type.indexOf('first') != -1) {
-        item['x'] = item['x'] - 300
-        item['y'] = item['y'] + 50
-      } 
-      if (item.data['type']&&item.data.type.indexOf('second') != -1) {
-        item['x'] = item['x'] - 30
-        item['y'] = item['y'] + 50
-      } 
-       if (item.data['type']&&item.data.type.indexOf('third') != -1) {
-        item['x'] = item['x'] + 300
-        item['y'] = item['y'] + 50
-      }
-      return item
-    })
-    console.log(this.hierarchyNodes)
+    this.initHierarchy()
+  },
+  computed: {
+    link() {
+      console.log(this.hierarchyNodes)
+      if(this.hierarchyNodes.length==0)return[]
+      return this.result_edge.map((item) => {
+        let { source, target } = item
+        let sourceNode = find(this.hierarchyNodes, (ite) => {
+          return ite.data.id == source
+        })
+        let targetNode = find(this.hierarchyNodes, (ite) => {
+          return ite.data.id == target
+        })
+        return {
+          source,
+          target,
+          x1: sourceNode.x,
+          y1: sourceNode.y,
+          x2: targetNode.x,
+          y2: targetNode.y
+        }
+      })
+    }
   },
   watch: {
+    dataList: {
+      handler(newValue) {
+        console.log(newValue)
+        this.initHierarchy()
+      }
+    },
     guidanceColors: {
       handler(newValue) {
         this.drawChart()
+        console.log(newValue)
       }
     },
     result_edge: {
@@ -120,7 +161,67 @@ export default {
     }
   },
   methods: {
+    initHierarchy() {
+      if (!this.dataList) return
+      const colors = d3.scaleOrdinal(d3.schemeAccent)
+      console.log(this.dataList, this.guidanceColors)
+      this.svg = d3
+        .select(this.$refs.forceGuidance)
+        .attr('width', this.width)
+        .attr('height', this.height)
+
+      let root = d3
+        .hierarchy(this.dataList)
+        .sum((d) => d.value) // 用 `value` 决定节点大小
+        .sort((a, b) => b.value - a.value) // 按值排序
+      const pack = d3
+        .pack()
+        .size([this.width - 50, this.height - 50]) // 设置布局范围
+        .padding((d) => {
+          // 根据节点的值动态计算填充
+          return d.depth == 0 ? 10 : d.depth == 1 ? 70 : 60
+        })
+      this.hierarchyNodes = pack(root).descendants().slice(1)
+      let first = find(this.hierarchyNodes, (item) => {
+        return item.data.type == 'first'
+      })
+      let first_order = {
+        x: 200 - first.x,
+        y: 300 - first.y
+      }
+      let second = find(this.hierarchyNodes, (item) => {
+        return item.data.type == 'second'
+      })
+      let second_order = {
+        x: 650 - second.x,
+        y: 300 - second.y
+      }
+      let third = find(this.hierarchyNodes, (item) => {
+        return item.data.type == 'third'
+      })
+      let third_order = {
+        x: 1100 - third.x,
+        y: 300 - third.y
+      }
+      this.hierarchyNodes.map((item) => {
+        if (item.data['type'] && item.data.type.indexOf('first') != -1) {
+          item['x'] = item['x'] + first_order.x
+          item['y'] = item['y'] + first_order.y
+        }
+        if (item.data['type'] && item.data.type.indexOf('second') != -1) {
+          item['x'] = item['x'] + second_order.x
+          item['y'] = item['y'] + second_order.y
+        }
+        if (item.data['type'] && item.data.type.indexOf('third') != -1) {
+          item['x'] = item['x'] + third_order.x
+          item['y'] = item['y'] + third_order.y
+        }
+        return item
+      })
+      console.log(this.hierarchyNodes)
+    },
     culNodes(newValue) {
+      return
       let obj = { 1: {}, 2: {} }
       if (!newValue['start']) return
       let objArr = [newValue['start'].map((item) => ({ id: item }))]
@@ -172,6 +273,7 @@ export default {
       this.obj = obj
     },
     init() {
+      return
       this.svg = d3
         .select(this.$refs.forceGuidance)
         .attr('width', this.width)
@@ -188,6 +290,7 @@ export default {
       this.content = this.svg.append('g')
     },
     drawChart() {
+      return
       this.actNode = ''
       this.content.selectAll('g.links').remove()
       this.content.selectAll('g.nodes').remove()
@@ -312,6 +415,7 @@ export default {
     },
 
     drawLinks() {
+      return
       let nodeObj = {}
       this.content.select('g.links').selectAll('*').remove()
       this.content.selectAll('circle').each(function () {
@@ -343,11 +447,8 @@ export default {
         })
         .attr('stroke-width', 1)
     },
-    handleClick(d) {
-      this.actNode = d.id
-      this.id = d.id
-
-      this.drawLinks()
+    handleClick(id) {
+      this.actNode =id
     }
   }
 }

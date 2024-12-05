@@ -131,7 +131,7 @@
           ></chart-plot>
         </div>
       </div>
-      <a-tabs activeKey="2">
+      <a-tabs>
         <a-tab-pane key="1" tab="策略1">
           <force-guidance
             :result_edge="forceData.result_edge"
@@ -184,6 +184,7 @@ import data3 from '@/views/data3.js'
 import ChartPlot from './ChartPlot.vue'
 import ForceGuidance from './ForceGuidance.vue'
 import HierarchyGuidance from './HierarchyGuidance.vue'
+import { find, groupBy,values } from 'lodash'
 let scale = 1
 const scaleFactor = 1.1 // 每次滚动放大的比例
 export default {
@@ -191,7 +192,8 @@ export default {
     'a-slider': Slider,
     UploadFile,
     'chart-plot': ChartPlot,
-    'hierarchy-guidance': HierarchyGuidance
+    'hierarchy-guidance': HierarchyGuidance,
+    'force-guidance': ForceGuidance,
   },
   data() {
     return {
@@ -249,120 +251,7 @@ export default {
       colors: [],
       scatter1colors: {},
       scatter2colors: {},
-      transform: null,
-      hierarchyData: {
-        name: 'Root',
-        children: [
-          {
-            name: 'Child 1',
-            value: 1,
-            type: 'first',
-            children: [
-              {
-                name: 'Child 2',
-                type: 'first-1',
-                value: 1
-              },
-              {
-                name: 'Child 2',
-                type: 'first-2',
-                value: 1
-              },
-              {
-                name: 'Child 2',
-                type: 'first-3',
-                value: 1
-              },
-              {
-                name: 'Child 2',
-                type: 'first-4',
-                value: 1
-              },
-              {
-                name: 'Child 2',
-                type: 'first-5',
-                value: 1
-              }
-            ]
-          },
-          {
-            name: 'Child 2',
-            value: 1,
-            type: 'second',
-            children: [
-              {
-                name: 'Child 2',
-                type: 'second/1',
-                value: 1,
-                children: [
-                  {
-                    name: 'Child 2',
-                    type: 'second/1-1',
-                    value: 1
-                  },
-                  {
-                    name: 'Child 2',
-                    type: 'second/1-2',
-                    value: 1
-                  }
-                ]
-              },
-              {
-                name: 'Child 2',
-                type: 'second/2',
-                value: 1
-              },
-              {
-                name: 'Child 2',
-                type: 'second/3',
-                value: 1
-              },
-              {
-                name: 'Child 2',
-                type: 'second/4',
-                value: 1
-              },
-              {
-                name: 'Child 2',
-                type: 'second/5',
-                value: 1
-              }
-            ]
-          },
-          {
-            name: 'Child 3',
-            value: 1,
-            type: 'third',
-            children: [
-              {
-                name: 'Child 2',
-                type: 'third/1',
-                value: 1
-              },
-              {
-                name: 'Child 2',
-                type: 'third/2',
-                value: 1
-              },
-              {
-                name: 'Child 2',
-                type: 'third/3',
-                value: 1
-              },
-              {
-                name: 'Child 2',
-                type: 'third/4',
-                value: 1
-              },
-              {
-                name: 'Child 2',
-                type: 'third/5',
-                value: 1
-              }
-            ]
-          }
-        ]
-      }
+      transform: null
     }
   },
   mounted() {
@@ -372,7 +261,6 @@ export default {
   methods: {
     brushInit() {
       setTimeout(() => {
-        console.log(123)
         this.brushList = []
         this.forceData = {
           result_edge: [],
@@ -387,19 +275,19 @@ export default {
       this.$refs.childComponent1.renderHistoricalDataset()
     },
     get_lns() {
-      let response = dataList
-      // this.$axios
-      //   .post('/userapi/get_lns/', {
-      //     k: this.value,
-      //     distance: this.distance,
-      //     from: this.sliderValues[0],
-      //     to: this.sliderValues[1],
-      //     epoch1: this.epoch1,
-      //     epoch2: this.epoch2,
-      //     layer1: this.layer1,
-      //     layer2: this.layer2
-      //   })
-      //   .then((response) => {
+      // let response = dataList
+      this.$axios
+        .post('/userapi/get_lns/', {
+          k: this.value,
+          distance: this.distance,
+          from: this.sliderValues[0],
+          to: this.sliderValues[1],
+          epoch1: this.epoch1,
+          epoch2: this.epoch2,
+          layer1: this.layer1,
+          layer2: this.layer2
+        })
+        .then((response) => {
       d3.select(this.$refs.scatterPlot).selectAll('*').remove()
       d3.select(this.$refs.chartContainer).selectAll('*').remove()
       d3.select(this.$refs.features1).selectAll('*').remove()
@@ -417,14 +305,13 @@ export default {
 
       this.drawChart()
       this.drawHistogram()
-      // })
+      })
     },
     clickNode(data) {
       this.click_id = data.nodeId
       this.click_node()
     },
     click_dimensionalFn(res) {
-      console.log(res)
       let nodes = [
         ...res.result_nodes.start,
         ...res.result_nodes['first order'],
@@ -442,27 +329,26 @@ export default {
           })
           return pre
         }, [])
-        console.log(this.guidanceColors)
       }
     },
     //点击单个节点，淡化其它节点
     click_node() {
       this.click_dimensional([this.click_id]).then((res) => this.click_dimensionalFn(res))
-      let response = data3
+      // let response = data3
 
-      // this.$axios
-      //   .post('/userapi/click_node/', {
-      //     id: this.click_id,
-      //     epoch1: this.epoch1,
-      //     epoch2: this.epoch1,
-      //     layer1: this.layer1,
-      //     layer2: this.layer2
-      //   })
-      //   .then((response) => {
+      this.$axios
+        .post('/userapi/click_node/', {
+          id: this.click_id,
+          epoch1: this.epoch1,
+          epoch2: this.epoch1,
+          layer1: this.layer1,
+          layer2: this.layer2
+        })
+        .then((response) => {
       this.links = response.data.link
       this.nodes = response.data.node
       this.showMatrixChart()
-      // })
+      })
     },
     showMatrixChart() {
       let nodeObj = this.nodes.reduce((pre, item) => {
@@ -542,15 +428,15 @@ export default {
     },
     click_dimensional(id) {
       return new Promise((resolve) => {
-        this.forceData = forceData
-        // this.$axios
-        //   .post('/userapi/k_hop/', {
-        //     id: id
-        //   })
-        //   .then((response) => {
+        // this.forceData = forceData
+        this.$axios
+          .post('/userapi/k_hop/', {
+            id: id
+          })
+          .then((response) => {
         this.forceData = response.data
         resolve(this.forceData)
-        // })
+        })
       })
     },
     handleFileChange(event) {
@@ -878,7 +764,6 @@ export default {
       }
 
       if (sf.brush === true) {
-        console.log(123456)
         let brushIns = d3
           .brush()
           .extent([
@@ -892,7 +777,6 @@ export default {
           })
           .on('end', (event) => {
             const selection = event.selection
-            console.log(selection)
             if (!selection) return
             const [[x0, y0], [x1, y1]] = selection
             let result = [scatter1Group.selectAll('circle'), scatter2Group.selectAll('circle')].map(
@@ -1174,6 +1058,82 @@ export default {
   computed: {
     brushNode() {
       return []
+    },
+    hierarchyData() {
+      if (!this.forceData.result_nodes['start']||this.guidanceColors.length==0) return null
+      let start = this.forceData.result_nodes['start'].map((item) => {
+        let node = find(this.guidanceColors, (ite) => ite.id == item)
+        console.log(node,this.guidanceColors,item)
+        return {
+          id: item,
+          colors: node.colors,
+          key: node.colors.join('/')
+        }
+      })
+      let first = this.forceData.result_nodes['first order'].map((item) => {
+        let node = find(this.guidanceColors, (ite) => ite.id == item)
+        return {
+          id: item,
+          colors: node.colors,
+          key: node.colors.join('/')
+        }
+      })
+      let second = this.forceData.result_nodes['second order'].map((item) => {
+        let node = find(this.guidanceColors, (ite) => ite.id == item)
+        return {
+          id: item,
+          colors: node.colors,
+          key: node.colors.join('/')
+        }
+      })
+      const groupedStart = groupBy(start, 'key')
+      const groupedFirst = groupBy(first, 'key')
+      const groupedSecond = groupBy(second, 'key')
+      console.log(groupedStart,groupedFirst,groupedSecond)
+      return {
+        name: 'Root',
+        children: [
+          {
+            type: 'first',
+            children: values(groupedStart).map((item, index) => {
+              return {
+                type: 'first/' + index,
+                children: item.map((ite, idx) => ({
+                  ...ite,
+                  type: `first/${index}/${idx}`,
+                  value: 1
+                }))
+              }
+            })
+          },
+          {
+            type: 'second',
+            children: values(groupedFirst).map((item, index) => {
+              return {
+                type: 'second/' + index,
+                children: item.map((ite, idx) => ({
+                  ...ite,
+                  type: `second/${index}/${idx}`,
+                  value: 1
+                }))
+              }
+            })
+          },
+          {
+            type: 'third',
+            children: values(groupedSecond).map((item, index) => {
+              return {
+                type: 'third/' + index,
+                children: item.map((ite, idx) => ({
+                  ...ite,
+                  type: `third/${index}/${idx}`,
+                  value: 1
+                }))
+              }
+            })
+          }
+        ]
+      }
     }
   },
   watch: {
