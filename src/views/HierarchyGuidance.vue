@@ -1,7 +1,7 @@
 <template>
   <div style="width: 100%; height: 100%">
     <div>点击的id：{{ id }}</div>
-    <svg ref="forceGuidance">
+    <svg ref="forceGuidance" style="background: #fff">
       <defs>
         <!-- 定义一个线性渐变 -->
         <linearGradient
@@ -27,12 +27,12 @@
       ></line>
       <circle
         v-for="item in hierarchyNodes"
-        :r="item.r"
+        :r="item.depth==3?6:item.r"
         :cx="item.x"
         :cy="item.y"
         :fill="item.data.id ? `url(#half_${item.data.id})` : '#fff'"
         :stroke="item.data.colors ? item.data.colors[2] : '#ddd'"
-        :stroke-width="item.children && item.children.length > 0 ? 1 : 5"
+        :stroke-width="item.depth==1?0:item.depth==2?1:2"
         @click="handleClick(item.data.id)"
       ></circle>
       <line

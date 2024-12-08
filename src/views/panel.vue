@@ -131,7 +131,7 @@
           ></chart-plot>
         </div>
       </div>
-      <a-tabs>
+      <a-tabs destroyInactiveTabPane>
         <a-tab-pane key="1" tab="策略1">
           <force-guidance
             :result_edge="forceData.result_edge"
