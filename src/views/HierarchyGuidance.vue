@@ -1,7 +1,7 @@
 <template>
   <div style="width: 100%; height: 100%">
     <div>点击的id：{{ id }}</div>
-    <svg ref="forceGuidance" style="background: #fff">
+    <svg ref="forceGuidance" style="background: #f0f0f0">
       <defs>
         <!-- 定义一个线性渐变 -->
         <linearGradient
@@ -16,43 +16,45 @@
           <stop offset="50%" :style="'stop-color: ' + item.colors[1] + '; stop-opacity: 1'" />
         </linearGradient>
       </defs>
-      <line
-        v-for="item in link"
-        :x1="item.x1"
-        :y1="item.y1"
-        :x2="item.x2"
-        :y2="item.y2"
-        stroke="#ddd"
-        stroke-width="1"
-      ></line>
-      <circle
-        v-for="item in hierarchyNodes"
-        :r="item.depth==3?6:item.r"
-        :cx="item.x"
-        :cy="item.y"
-        :fill="item.data.id ? `url(#half_${item.data.id})` : '#fff'"
-        :stroke="item.data.colors ? item.data.colors[2] : '#ddd'"
-        :stroke-width="item.depth==1?0:item.depth==2?1:2"
-        @click="handleClick(item.data.id)"
-      ></circle>
-      <line
-        v-for="item in link.filter(item => item.source !== actNode && item.target !== actNode)"
-        :x1="item.x1"
-        :y1="item.y1"
-        :x2="item.x2"
-        :y2="item.y2"
-        stroke="#ddd"
-        stroke-width="1"
-      ></line>
-      <line
-        v-for="item in link.filter(item => item.source == actNode || item.target == actNode)"
-        :x1="item.x1"
-        :y1="item.y1"
-        :x2="item.x2"
-        :y2="item.y2"
-        stroke="#f00"
-        stroke-width="1"
-      ></line>
+      <g class="gContent">
+        <line
+          v-for="item in link"
+          :x1="item.x1"
+          :y1="item.y1"
+          :x2="item.x2"
+          :y2="item.y2"
+          stroke="#ddd"
+          stroke-width="1"
+        ></line>
+        <circle
+          v-for="item in hierarchyNodes"
+          :r="item.depth == 4  ? 6 : item.r"
+          :cx="item.x"
+          :cy="item.y"
+          :fill="item.data.id ? `url(#half_${item.data.id})` : '#fff'"
+          :stroke="item.data.colors ? item.data.colors[2] : '#ddd'"
+          :stroke-width="item.depth == 1 ? 0 : item.depth == 2 ? 1 : 2"
+          @click="handleClick(item.data.id)"
+        ></circle>
+        <line
+          v-for="item in link.filter((item) => item.source !== actNode && item.target !== actNode)"
+          :x1="item.x1"
+          :y1="item.y1"
+          :x2="item.x2"
+          :y2="item.y2"
+          stroke="#ddd"
+          stroke-width="1"
+        ></line>
+        <line
+          v-for="item in link.filter((item) => item.source == actNode || item.target == actNode)"
+          :x1="item.x1"
+          :y1="item.y1"
+          :x2="item.x2"
+          :y2="item.y2"
+          stroke="#f00"
+          stroke-width="1"
+        ></line>
+      </g>
     </svg>
   </div>
 </template>
@@ -109,7 +111,7 @@ export default {
   computed: {
     link() {
       console.log(this.hierarchyNodes)
-      if(this.hierarchyNodes.length==0)return[]
+      if (this.hierarchyNodes.length == 0) return []
       return this.result_edge.map((item) => {
         let { source, target } = item
         let sourceNode = find(this.hierarchyNodes, (ite) => {
@@ -170,6 +172,15 @@ export default {
         .attr('width', this.width)
         .attr('height', this.height)
 
+      this.svg.call(
+        d3
+          .zoom()
+          .scaleExtent([0.1, 4])
+          .on('zoom', (event) => {
+            let { transform } = event
+            d3.select('.gContent').transition().duration(10).attr('transform', transform)
+          })
+      )
       let root = d3
         .hierarchy(this.dataList)
         .sum((d) => d.value) // 用 `value` 决定节点大小
@@ -448,7 +459,7 @@ export default {
         .attr('stroke-width', 1)
     },
     handleClick(id) {
-      this.actNode =id
+      this.actNode = id
     }
   }
 }

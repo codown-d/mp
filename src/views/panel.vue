@@ -1,5 +1,5 @@
 <template>
-  <div style="display: flex; margin: 0; padding: 0">
+  <div style="display: flex; margin: 0; padding: 0; width: 100%; height: 100%">
     <div
       style="
         display: block;
@@ -9,90 +9,110 @@
         background: #fff;
         top: 0;
         padding-top: 20px;
+        overflow: hidden;
+        overflow-y: auto;
+        height: 100%;
       "
     >
-      <UploadFile></UploadFile>
-      <input type="file" @change="handleFileChange" style="width: 270px" />
-      <div style="display: flex; width: 270px">
-        <div style="margin-right: 5px">
-          <v-responsive class="mx-auto" width="70">
-            <v-text-field v-model="this.epoch1" hide-details="auto" label="epoch1"></v-text-field>
-          </v-responsive>
+      <div style="width: 100%">
+        <UploadFile></UploadFile>
+        <input
+          type="file"
+          @change="(event) => handleFileChange(event, 'file1')"
+          style="width: 270px"
+        />
+        <input
+          type="file"
+          @change="(event) => handleFileChange(event, 'file2')"
+          style="width: 270px"
+        />
+        <div style="display: flex; width: 270px">
+          <div style="margin-right: 5px">
+            <v-responsive class="mx-auto" width="70">
+              <v-text-field v-model="this.epoch1" hide-details="auto" label="epoch1"></v-text-field>
+            </v-responsive>
+          </div>
+
+          <div style="margin-right: 10px">
+            <v-responsive class="mx-auto" width="60">
+              <v-text-field v-model="this.layer1" hide-details="auto" label="layer1"></v-text-field>
+            </v-responsive>
+          </div>
+
+          <div style="margin-right: 5px">
+            <v-responsive class="mx-auto" width="70">
+              <v-text-field v-model="this.epoch2" hide-details="auto" label="epoch2"></v-text-field>
+            </v-responsive>
+          </div>
+
+          <div>
+            <v-responsive class="mx-auto" width="60">
+              <v-text-field v-model="this.layer2" hide-details="auto" label="layer2"></v-text-field>
+            </v-responsive>
+          </div>
         </div>
 
-        <div style="margin-right: 10px">
-          <v-responsive class="mx-auto" width="60">
-            <v-text-field v-model="this.layer1" hide-details="auto" label="layer1"></v-text-field>
-          </v-responsive>
+        <div style="margin-bottom: 5px; width: 270px">
+          <v-col class="py-1" cols="12">
+            <h3 style="margin-bottom: 5px">Distance:</h3>
+
+            <v-btn-toggle v-model="toggle" divided>
+              <v-btn @click="this.distance = 0">Euclidean</v-btn>
+              <v-btn @click="this.distance = 1">cosine</v-btn>
+            </v-btn-toggle>
+          </v-col>
+        </div>
+        <div style="margin-bottom: 10px; width: 270px">
+          <h3 style="margin-bottom: 10px">K(k-nearset neighbours)：{{ value }}</h3>
+          <v-slider v-model="value" min="1" max="500" step="1" style="width: 250px"></v-slider>
         </div>
 
-        <div style="margin-right: 5px">
-          <v-responsive class="mx-auto" width="70">
-            <v-text-field v-model="this.epoch2" hide-details="auto" label="epoch2"></v-text-field>
-          </v-responsive>
+        <div style="width: 265px">
+          <h3 style="margin-bottom: 10px">LNS Range：{{ sliderValues }}</h3>
+          <v-range-slider
+            v-model="sliderValues"
+            strict
+            min="0"
+            max="1"
+            step="0.01"
+          ></v-range-slider>
         </div>
 
-        <div>
-          <v-responsive class="mx-auto" width="60">
-            <v-text-field v-model="this.layer2" hide-details="auto" label="layer2"></v-text-field>
-          </v-responsive>
+        <div style="width: 270px; margin-top: 10px">
+          <v-btn @click="get_lns" style="width: 250px">确定</v-btn>
         </div>
-      </div>
 
-      <div style="margin-bottom: 5px; width: 270px">
-        <v-col class="py-1" cols="12">
-          <h3 style="margin-bottom: 5px">Distance:</h3>
+        <div style="width: 270px; margin-top: 10px">
+          <!--        <v-btn @click="get_lns">确定</v-btn>-->
+          <v-btn @click="requestForceGraphData" style="margin-right: 10px; width: 120px"
+            >更新数据集</v-btn
+          >
+          <v-btn @click="renderHistoricalDataset" v-if="nodesStorage['nodes']" style="width: 120px"
+            >历史数据集</v-btn
+          >
+        </div>
+        <div style="margin-top: 10px">
+          <v-btn @click="brushInit" style="margin-right: 10px; width: 120px">清除brush</v-btn>
+        </div>
 
-          <v-btn-toggle v-model="toggle" divided>
-            <v-btn @click="this.distance = 0">Euclidean</v-btn>
-            <v-btn @click="this.distance = 1">cosine</v-btn>
-          </v-btn-toggle>
-        </v-col>
-      </div>
-      <div style="margin-bottom: 10px; width: 270px">
-        <h3 style="margin-bottom: 10px">K(k-nearset neighbours)：{{ value }}</h3>
-        <v-slider v-model="value" min="1" max="500" step="1" style="width: 250px"></v-slider>
-      </div>
+        <v-card style="width: 270px; height: 200px; margin-top: 10px">
+          <p style="margin-top: 5px; margin-left: 15px">LNS Distribution:</p>
 
-      <div style="width: 265px">
-        <h3 style="margin-bottom: 10px">LNS Range：{{ sliderValues }}</h3>
-        <v-range-slider v-model="sliderValues" strict min="0" max="1" step="0.01"></v-range-slider>
+          <svg
+            ref="chartContainer"
+            width="250"
+            height="160"
+            style="margin-left: 10px"
+            class="chartContainer"
+          ></svg>
+        </v-card>
+        <v-card style="width: 270px; height: 170px; margin-top: 10px">
+          <p style="margin-top: 5px; margin-left: 15px">Average Density:</p>
+          <svg ref="rect" width="250" height="160" style="padding: 0; margin-left: 10px"></svg>
+        </v-card>
       </div>
-
-      <div style="width: 270px; margin-top: 10px">
-        <v-btn @click="get_lns" style="width: 250px">确定</v-btn>
-      </div>
-
-      <div style="width: 270px; margin-top: 10px">
-        <!--        <v-btn @click="get_lns">确定</v-btn>-->
-        <v-btn @click="requestForceGraphData" style="margin-right: 10px; width: 120px"
-          >更新数据集</v-btn
-        >
-        <v-btn @click="renderHistoricalDataset" v-if="nodesStorage['nodes']" style="width: 120px"
-          >历史数据集</v-btn
-        >
-      </div>
-      <div style="margin-top: 10px">
-        <v-btn @click="brushInit" style="margin-right: 10px; width: 120px">清除brush</v-btn>
-      </div>
-
-      <v-card style="width: 270px; height: 200px; margin-top: 10px">
-        <p style="margin-top: 5px; margin-left: 15px">LNS Distribution:</p>
-
-        <svg
-          ref="chartContainer"
-          width="250"
-          height="160"
-          style="margin-left: 10px"
-          class="chartContainer"
-        ></svg>
-      </v-card>
-      <v-card style="width: 270px; height: 170px; margin-top: 10px">
-        <p style="margin-top: 5px; margin-left: 15px">Average Density:</p>
-        <svg ref="rect" width="250" height="160" style="padding: 0; margin-left: 10px"></svg>
-      </v-card>
     </div>
-    <div class="container" style="width: 0; flex: 1; padding-left: 300px">
+    <div class="container" style="width: 0; flex: 1; padding-left: 310px">
       <div
         style="
           position: fixed;
@@ -106,9 +126,9 @@
         "
       >
         <v-btn-toggle v-model="text" color="deep-purple-accent-3" rounded="0" group>
-          <v-btn @click="this.defaultDraw" style="margin-bottom: 4px">position</v-btn>
-          <v-btn @click="this.trueDraw" style="margin-left: 8px">true label</v-btn>
-          <v-btn @click="this.predictedDraw">predicted label</v-btn>
+          <v-btn @click="drawFn(0)" style="margin-bottom: 4px">position</v-btn>
+          <v-btn @click="drawFn(1)" style="margin-left: 8px">true label</v-btn>
+          <v-btn @click="drawFn(2)">predicted label</v-btn>
         </v-btn-toggle>
         <v-btn @click="clickDraw" style="margin-left: 10px; margin-right: 20px">reset</v-btn>
         <v-switch
@@ -152,8 +172,9 @@
       </a-tabs>
 
       <div>
-        <a-input v-model:value="inputVal" placeholder="Basic usage" style="width: 200px" />
+        <a-input v-model:value="inputVal" placeholder="点击id" style="width: 200px" />
         <span v-if="click_id != -1">节点id：{{ click_id }}</span>
+        <a-switch v-model:checked="compareVal" />
       </div>
 
       <svg ref="scatterPlot" style="height: 450px" class="scatterPlot"></svg>
@@ -184,7 +205,7 @@ import data3 from '@/views/data3.js'
 import ChartPlot from './ChartPlot.vue'
 import ForceGuidance from './ForceGuidance.vue'
 import HierarchyGuidance from './HierarchyGuidance.vue'
-import { find, groupBy,values } from 'lodash'
+import { find, groupBy, values, keys } from 'lodash'
 let scale = 1
 const scaleFactor = 1.1 // 每次滚动放大的比例
 export default {
@@ -193,7 +214,7 @@ export default {
     UploadFile,
     'chart-plot': ChartPlot,
     'hierarchy-guidance': HierarchyGuidance,
-    'force-guidance': ForceGuidance,
+    'force-guidance': ForceGuidance
   },
   data() {
     return {
@@ -223,7 +244,6 @@ export default {
       disabled: false,
       sliderValues: [0.1, 0.3],
       trueLabel: [],
-      Label: null, //all
       Label1: [], //predicted1
       Label2: [], //predicted2
       labelIndex: 0, //1为true,2为predicted
@@ -251,7 +271,12 @@ export default {
       colors: [],
       scatter1colors: {},
       scatter2colors: {},
-      transform: null
+      transform: null,
+      fileData: {
+        file1: [],
+        file2: []
+      },
+      compareVal: false
     }
   },
   mounted() {
@@ -275,19 +300,19 @@ export default {
       this.$refs.childComponent1.renderHistoricalDataset()
     },
     get_lns() {
-      // let response = dataList
-      this.$axios
-        .post('/userapi/get_lns/', {
-          k: this.value,
-          distance: this.distance,
-          from: this.sliderValues[0],
-          to: this.sliderValues[1],
-          epoch1: this.epoch1,
-          epoch2: this.epoch2,
-          layer1: this.layer1,
-          layer2: this.layer2
-        })
-        .then((response) => {
+      let response = dataList
+      // this.$axios
+      //   .post('/userapi/get_lns/', {
+      //     k: this.value,
+      //     distance: this.distance,
+      //     from: this.sliderValues[0],
+      //     to: this.sliderValues[1],
+      //     epoch1: this.epoch1,
+      //     epoch2: this.epoch2,
+      //     layer1: this.layer1,
+      //     layer2: this.layer2
+      //   })
+      //   .then((response) => {
       d3.select(this.$refs.scatterPlot).selectAll('*').remove()
       d3.select(this.$refs.chartContainer).selectAll('*').remove()
       d3.select(this.$refs.features1).selectAll('*').remove()
@@ -305,7 +330,7 @@ export default {
 
       this.drawChart()
       this.drawHistogram()
-      })
+      // })
     },
     clickNode(data) {
       this.click_id = data.nodeId
@@ -334,21 +359,20 @@ export default {
     //点击单个节点，淡化其它节点
     click_node() {
       this.click_dimensional([this.click_id]).then((res) => this.click_dimensionalFn(res))
-      // let response = data3
-
-      this.$axios
-        .post('/userapi/click_node/', {
-          id: this.click_id,
-          epoch1: this.epoch1,
-          epoch2: this.epoch1,
-          layer1: this.layer1,
-          layer2: this.layer2
-        })
-        .then((response) => {
+      let response = data3
+      // this.$axios
+      //   .post('/userapi/click_node/', {
+      //     id: this.click_id,
+      //     epoch1: this.epoch1,
+      //     epoch2: this.epoch1,
+      //     layer1: this.layer1,
+      //     layer2: this.layer2
+      //   })
+      //   .then((response) => {
       this.links = response.data.link
       this.nodes = response.data.node
       this.showMatrixChart()
-      })
+      // })
     },
     showMatrixChart() {
       let nodeObj = this.nodes.reduce((pre, item) => {
@@ -428,41 +452,32 @@ export default {
     },
     click_dimensional(id) {
       return new Promise((resolve) => {
-        // this.forceData = forceData
-        this.$axios
-          .post('/userapi/k_hop/', {
-            id: id
-          })
-          .then((response) => {
-        this.forceData = response.data
+        this.forceData = forceData
+        // this.$axios
+        //   .post('/userapi/k_hop/', {
+        //     id: id
+        //   })
+        //   .then((response) => {
+        // this.forceData = response.data
         resolve(this.forceData)
-        })
+        // })
       })
     },
-    handleFileChange(event) {
+    handleFileChange(event, type) {
       const file = event.target.files[0]
-      this.Label = file
       Papa.parse(file, {
         complete: (results) => {
-          this.trueLabel = results.data[0]
-          this.Label1 = results.data[this.epoch1]
-          this.Label2 = results.data[this.epoch2]
+          this.fileData[type] = results.data
+          if (type == 'file1') {
+            this.Label1 = this.fileData['file1'][this.epoch1]
+          } else if (type == 'file2') {
+            this.Label2 = this.fileData['file2'][this.epoch2]
+          }
         }
       })
     },
-    defaultDraw() {
-      this.labelIndex = 0
-      d3.select(this.$refs.scatterPlot).selectAll('*').remove()
-      this.drawChart()
-    },
-    trueDraw() {
-      this.labelIndex = 1
-      d3.select(this.$refs.scatterPlot).selectAll('*').remove()
-      this.drawChart()
-    },
-    predictedDraw() {
-      this.labelIndex = 2
-      d3.select(this.$refs.scatterPlot).selectAll('*').remove()
+    drawFn(index) {
+      this.labelIndex = index
       this.drawChart()
     },
     clickDraw() {
@@ -506,10 +521,30 @@ export default {
     // 散点图
     drawChart() {
       const sf = this
-      const scatter1 = this.scatter1
-      const scatter2 = this.scatter2
-      const density1 = this.density1
-      const density2 = this.density2
+      const colors = d3.scaleOrdinal(d3.schemeAccent)
+      let scatterK1 = this.scatter1.reduce((pre, item) => {
+        pre[item.index] = colors(sf.Label1[item.index])
+        return pre
+      }, {})
+      let scatterK2 = this.scatter2.reduce((pre, item) => {
+        pre[item.index] = colors(sf.Label2[item.index])
+        return pre
+      }, {})
+      let arr = keys(scatterK1)
+        .filter((item) => {
+          return !this.compareVal || scatterK2[item] !== scatterK1[item]
+        })
+        .map((item) => Number(item))
+      const scatter1 = this.scatter1.filter((item) => {
+        return arr.includes(Number(item.index))
+      })
+      const scatter2 = this.scatter2.filter((item) => {
+        return arr.includes(Number(item.index))
+      })
+      // const scatter2 = this.scatter2
+
+      // const density1 = this.density1
+      // const density2 = this.density2
 
       // 创建SVG绘图区域的尺寸
       const width = 500
@@ -570,7 +605,6 @@ export default {
         })
       }
       this.brushSvg = svgScatter.append('g')
-      const colors = d3.scaleOrdinal(d3.schemeAccent)
       this.colors = colors
       // 创建散点图1的分组
       const scatter1Group = this.brushSvg
@@ -647,7 +681,7 @@ export default {
           } else if (sf.labelIndex === 1) {
             originalColor = colors(sf.trueLabel[d.index])
           } else {
-            originalColor = colors(sf.Label1[d.index])
+            originalColor = sf.Label1[d.index] ? colors(sf.Label1[d.index]) : 'transparent'
           }
           if (sf.click_id === -1) {
             return originalColor
@@ -660,6 +694,7 @@ export default {
             return d3.color(originalColor).copy({ opacity: 1 })
           }
         })
+
       let sg2 = scatter2Group
         .selectAll('circle.scatter2')
         .data(scatter2)
@@ -686,7 +721,7 @@ export default {
           } else if (sf.labelIndex === 1) {
             originalColor = colors(sf.trueLabel[d.index])
           } else {
-            originalColor = colors(sf.Label2[d.index])
+            originalColor = sf.Label2[d.index] ? colors(sf.Label2[d.index]) : 'transparent'
           }
 
           if (sf.click_id === -1) {
@@ -1060,13 +1095,13 @@ export default {
       return []
     },
     hierarchyData() {
-      if (!this.forceData.result_nodes['start']||this.guidanceColors.length==0) return null
+      if (!this.forceData.result_nodes['start'] || this.guidanceColors.length == 0) return null
       let start = this.forceData.result_nodes['start'].map((item) => {
         let node = find(this.guidanceColors, (ite) => ite.id == item)
-        console.log(node,this.guidanceColors,item)
         return {
           id: item,
           colors: node.colors,
+          parentKey: node.colors[2],
           key: node.colors.join('/')
         }
       })
@@ -1075,6 +1110,7 @@ export default {
         return {
           id: item,
           colors: node.colors,
+          parentKey: node.colors[2],
           key: node.colors.join('/')
         }
       })
@@ -1083,14 +1119,18 @@ export default {
         return {
           id: item,
           colors: node.colors,
+          parentKey: node.colors[2],
           key: node.colors.join('/')
         }
       })
-      const groupedStart = groupBy(start, 'key')
-      const groupedFirst = groupBy(first, 'key')
-      const groupedSecond = groupBy(second, 'key')
-      console.log(groupedStart,groupedFirst,groupedSecond)
-      return {
+
+      const groupedStart = groupBy(start, 'parentKey')
+
+      console.log(groupedStart)
+      // const groupedStart = groupBy(start, 'key')
+      const groupedFirst = groupBy(first, 'parentKey')
+      const groupedSecond = groupBy(second, 'parentKey')
+      let d = {
         name: 'Root',
         children: [
           {
@@ -1098,10 +1138,15 @@ export default {
             children: values(groupedStart).map((item, index) => {
               return {
                 type: 'first/' + index,
-                children: item.map((ite, idx) => ({
-                  ...ite,
+                children: values(groupBy(item, 'key')).map((ite, idx) => ({
                   type: `first/${index}/${idx}`,
-                  value: 1
+                  children: ite.map((it, i) => {
+                    return {
+                      ...it,
+                      type: `first/${index}/${idx}/${i}`,
+                      value: 1
+                    }
+                  })
                 }))
               }
             })
@@ -1111,10 +1156,15 @@ export default {
             children: values(groupedFirst).map((item, index) => {
               return {
                 type: 'second/' + index,
-                children: item.map((ite, idx) => ({
-                  ...ite,
+                children: values(groupBy(item, 'key')).map((ite, idx) => ({
                   type: `second/${index}/${idx}`,
-                  value: 1
+                  children: ite.map((it, i) => {
+                    return {
+                      ...it,
+                      type: `second/${index}/${idx}/${i}`,
+                      value: 1
+                    }
+                  })
                 }))
               }
             })
@@ -1124,16 +1174,23 @@ export default {
             children: values(groupedSecond).map((item, index) => {
               return {
                 type: 'third/' + index,
-                children: item.map((ite, idx) => ({
-                  ...ite,
+                children: values(groupBy(item, 'key')).map((ite, idx) => ({
                   type: `third/${index}/${idx}`,
-                  value: 1
+                  children: ite.map((it, i) => {
+                    return {
+                      ...it,
+                      type: `third/${index}/${idx}/${i}`,
+                      value: 1
+                    }
+                  })
                 }))
               }
             })
           }
         ]
       }
+      console.log(d)
+      return d
     }
   },
   watch: {
@@ -1165,22 +1222,17 @@ export default {
     },
 
     epoch1(newValue, oldValue) {
-      if (this.Label != null) {
-        Papa.parse(this.Label, {
-          complete: (results) => {
-            this.Label1 = results.data[newValue]
-          }
-        })
-      }
+      this.Label1 = this.fileData['file1'][newValue]
+      this.trueLabel = this.fileData['file1'][0]
+      this.drawChart()
     },
     epoch2(newValue, oldValue) {
-      if (this.Label != null) {
-        Papa.parse(this.Label, {
-          complete: (results) => {
-            this.Label2 = results.data[newValue]
-          }
-        })
-      }
+      this.Label2 = this.fileData['file2'][newValue]
+      // this.trueLabel=this.fileData['file1'][0]
+      this.drawChart()
+    },
+    compareVal() {
+      this.drawChart()
     }
   }
 }
