@@ -1,9 +1,9 @@
 <template>
-  <svg style="display: none">
+  <svg style="width: 1400; height: 600">
     <defs>
       <!-- 定义一个线性渐变 -->
       <linearGradient
-        :id="'half_' + item.id"
+        :id="'halfMV_' + item.id"
         x1="0%"
         y1="0%"
         x2="100%"
@@ -14,8 +14,67 @@
         <stop offset="50%" :style="'stop-color: ' + item.colors[1] + '; stop-opacity: 1'" />
       </linearGradient>
     </defs>
+    <g style="transform: translate(0px, 50px)">
+      <rect
+        x="20"
+        y="0"
+        width="380"
+        height="500"
+        fill="transparent"
+        stroke="black"
+        stroke-width="1"
+      />
+      <circle
+        v-for="item in start"
+        :r="4"
+        :cx="item.x"
+        :cy="item.y"
+        :fill="`url(#halfMV_${item.index})`"
+      ></circle>
+    </g>
+    <g style="transform: translate(400px, 50px)">
+      <rect
+        x="20"
+        y="0"
+        width="400"
+        height="500"
+        fill="transparent"
+        stroke="black"
+        stroke-width="1"
+      />
+      <circle
+        v-for="item in matrix_1_0"
+        :r="4"
+        :cx="item.x"
+        :cy="item.y"
+        :fill="`url(#halfMV_${item.index})`"
+      ></circle>
+    </g>
+    <g style="transform: translate(900px, 50px)">
+      <rect
+        x="0"
+        y="0"
+        width="400"
+        height="225"
+        fill="transparent"
+        stroke="black"
+        stroke-width="1"
+      />
+      <circle v-for="item in matrix_2_0" :r="4" :cx="item.x" :cy="item.y" :fill="'#000'"></circle>
+    </g>
+    <g style="transform: translate(900px, 350px)">
+      <rect
+        x="0"
+        y="0"
+        width="400"
+        height="225"
+        fill="transparent"
+        stroke="black"
+        stroke-width="1"
+      />
+      <circle v-for="item in matrix_2_1" :r="4" :cx="item.x" :cy="item.y" :fill="'#000'"></circle>
+    </g>
   </svg>
-  <div ref="chartContainer" style="height: 100%; width: 100%"></div>
 </template>
 
 <script>
@@ -35,7 +94,11 @@ export default {
     },
     result_nodes: {
       type: Object,
-      default: {}
+      default: {
+        matrix_1_0: [],
+        matrix_2_0: [],
+        matrix_2_1: []
+      }
     },
     brushNode: {
       type: Array,
@@ -55,7 +118,7 @@ export default {
       nodes: [],
       nodesRect: [],
       links: [],
-      width: 1400,
+      width: 1200,
       height: 600,
       svg: null,
       actNode: '',
@@ -67,109 +130,87 @@ export default {
     }
   },
   mounted() {
-    this.initHierarchy()
+    // this.initHierarchy()
   },
-  watch: {
-    plotNodes(newVal, oldVal) {
-      this.initHierarchy()
-    }
-  },
+  watch: {},
   computed: {
-    plotNodes() {
-      console.log(this.$props)
-      if (!this.$props || this.$props.result_nodes.length == 0) return []
-      let arr = [
-        this.$props.result_nodes['matrix_1_0'].map((item) => {
-          return [item.x, item.y]
-        }),
-        this.$props.result_nodes['matrix_2_0'].map((item) => {
-          return [item.x, item.y]
-        }),
-        this.$props.result_nodes['matrix_2_1'].map((item) => {
-          return [item.x, item.y]
-        })
-      ]
-      return arr
+    start() {
+      let plotNodes = this.$props.result_nodes['start'].map((item) => {
+        return [item.x, item.y]
+      })
+      const xScale_0 = d3
+        .scaleLinear()
+        .domain([50, (this.width / 3) * 0.8])
+        .range([50, (this.width / 3) * 0.8]) 
+      const yScale_0 = d3
+        .scaleLinear()
+        .domain([50, (this.height - 100) * 0.8])
+        .range([50, (this.height - 100) * 0.8])
+      return this.$props.result_nodes['start'].map((item) => {
+        return {
+          index: item,
+          x: ((Math.random() * this.width) / 4) * 0.7 + 50,
+          y: Math.random() * this.height * 0.7 + 50
+        }
+      })
+    },
+    matrix_1_0() {
+      let plotNodes = this.$props.result_nodes['matrix_1_0'].map((item) => {
+        return [item.x, item.y]
+      })
+      const xScale_0 = d3
+        .scaleLinear()
+        .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
+        .range([50, (this.width / 3) * 0.8]) //this.width/3
+      const yScale_0 = d3
+        .scaleLinear()
+        .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
+        .range([50, (this.height - 100) * 0.8])
+      return this.$props.result_nodes['matrix_1_0'].map((item) => {
+        item.x = xScale_0(item.x)
+        item.y = yScale_0(item.y)
+        return item
+      })
+    },
+    matrix_2_0() {
+      let plotNodes = this.$props.result_nodes['matrix_2_0'].map((item) => {
+        return [item.x, item.y]
+      })
+      const xScale_0 = d3
+        .scaleLinear()
+        .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
+        .range([50, (this.width / 3) * 0.8]) //this.width/3
+      const yScale_0 = d3
+        .scaleLinear()
+        .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
+        .range([50, (this.height / 2 - 75) * 0.8])
+      return this.$props.result_nodes['matrix_2_0'].map((item) => {
+        item.x = xScale_0(item.x)
+        item.y = yScale_0(item.y)
+        return item
+      })
+    },
+    matrix_2_1() {
+      let plotNodes = this.$props.result_nodes['matrix_2_1'].map((item) => {
+        return [item.x, item.y]
+      })
+      const xScale_0 = d3
+        .scaleLinear()
+        .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
+        .range([50, (this.width / 3) * 0.8]) //this.width/3
+      const yScale_0 = d3
+        .scaleLinear()
+        .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
+        .range([50, (this.height / 2 - 75) * 0.8])
+      return this.$props.result_nodes['matrix_2_1'].map((item) => {
+        item.x = xScale_0(item.x)
+        item.y = yScale_0(item.y)
+        return item
+      })
     }
   },
   methods: {
-    initHierarchy() {
-      this.myChart && this.myChart.dispose()
-      console.log(this.plotNodes)
-      let option = {
-        grid: [
-          { left: '7%', top: '7%', width: '38%', height: '86%' },
-          { right: '7%', top: '7%', width: '38%', height: '38%' },
-          { right: '7%', bottom: '7%', width: '38%', height: '38%' }
-        ],
-        xAxis: [
-          {
-            gridIndex: 0,
-            min: min(this.plotNodes[0].flat().map((d) => d[0])),
-            max: max(this.plotNodes[0].flat().map((d) => d[0]))
-          },
-          {
-            gridIndex: 1,
-            min: min(this.plotNodes[1].flat().map((d) => d[0])),
-            max: max(this.plotNodes[1].flat().map((d) => d[0]))
-          },
-          {
-            gridIndex: 2,
-            min: min(this.plotNodes[2].flat().map((d) => d[0])),
-            max: max(this.plotNodes[2].flat().map((d) => d[0]))
-          }
-        ],
-        yAxis: [
-          {
-            gridIndex: 0,
-            min: min(this.plotNodes[0].flat().map((d) => d[1])),
-            max: max(this.plotNodes[0].flat().map((d) => d[1]))
-          },
-          {
-            gridIndex: 1,
-            min: min(this.plotNodes[1].flat().map((d) => d[1])),
-            max: max(this.plotNodes[1].flat().map((d) => d[1]))
-          },
-          {
-            gridIndex: 2,
-            min: min(this.plotNodes[2].flat().map((d) => d[1])),
-            max: max(this.plotNodes[2].flat().map((d) => d[1]))
-          }
-        ],
-        series: [
-          {
-            type: 'scatter',
-            xAxisIndex: 0,
-            yAxisIndex: 0,
-            data: this.plotNodes[0]
-          },
-          {
-            type: 'scatter',
-            xAxisIndex: 1,
-            yAxisIndex: 1,
-            data: this.plotNodes[1],
-            itemStyle: {
-              color: function (params) {
-                return `url(#half_${params.data.id})`
-              }
-            }
-          },
-          {
-            type: 'scatter',
-            xAxisIndex: 2,
-            yAxisIndex: 2,
-            data: this.plotNodes[2]
-          }
-        ]
-      }
-      var myChart = echarts.init(this.$refs.chartContainer)
-      this.myChart = myChart
-      option && myChart.setOption(option)
-      myChart.resize({
-        width: this.width,
-        height: this.height
-      })
-    }
+    initHierarchy() {}
   }
 }
 </script>
