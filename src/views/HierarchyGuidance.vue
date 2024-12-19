@@ -203,7 +203,14 @@ export default {
           // 根据节点的值动态计算填充
           return d.depth == 0 ? 10 : d.depth == 1 ? 70 : 60
         })
-      this.hierarchyNodes = pack(root).descendants().slice(1)
+      this.hierarchyNodes = pack(root).descendants().slice(1).map(item=>{
+        return {
+          ...item,
+          x:item.y,
+          y:item.x
+        }
+      })
+      console.log(this.hierarchyNodes)
       let first = find(this.hierarchyNodes, (item) => {
         return item.data.type == 'first'
       })
