@@ -169,6 +169,13 @@
             :guidanceColors="guidanceColors"
           ></hierarchy-guidance>
         </a-tab-pane>
+        <a-tab-pane key="3" tab="策略3">
+          <matrix-view
+            :result_edge="forceData.result_edge"
+            :result_nodes="forceData.result_nodes"
+            :guidanceColors="guidanceColors"
+          ></matrix-view>
+        </a-tab-pane>
       </a-tabs>
 
       <div>
@@ -201,10 +208,10 @@ import Papa from 'papaparse'
 import dataList from '@/views/data.js'
 import forceData from '@/views/data1.js'
 import data3 from '@/views/data3.js'
-
 import ChartPlot from './ChartPlot.vue'
 import ForceGuidance from './ForceGuidance.vue'
 import HierarchyGuidance from './HierarchyGuidance.vue'
+import MatrixView from './MatrixView.vue'
 import { find, groupBy, values, keys } from 'lodash'
 let scale = 1
 const scaleFactor = 1.1 // 每次滚动放大的比例
@@ -214,7 +221,8 @@ export default {
     UploadFile,
     'chart-plot': ChartPlot,
     'hierarchy-guidance': HierarchyGuidance,
-    'force-guidance': ForceGuidance
+    'force-guidance': ForceGuidance,
+    'matrix-view': MatrixView
   },
   data() {
     return {
@@ -280,7 +288,7 @@ export default {
     }
   },
   mounted() {
-    // this.forceData = forceData
+    this.forceData = forceData
   },
 
   methods: {
