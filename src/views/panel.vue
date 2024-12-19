@@ -151,7 +151,7 @@
           ></chart-plot>
         </div>
       </div>
-      <a-tabs destroyInactiveTabPane>
+      <a-tabs>
         <a-tab-pane key="1" tab="策略1">
           <force-guidance
             :result_edge="forceData.result_edge"
@@ -308,19 +308,19 @@ export default {
       this.$refs.childComponent1.renderHistoricalDataset()
     },
     get_lns() {
-      let response = dataList
-      // this.$axios
-      //   .post('/userapi/get_lns/', {
-      //     k: this.value,
-      //     distance: this.distance,
-      //     from: this.sliderValues[0],
-      //     to: this.sliderValues[1],
-      //     epoch1: this.epoch1,
-      //     epoch2: this.epoch2,
-      //     layer1: this.layer1,
-      //     layer2: this.layer2
-      //   })
-      //   .then((response) => {
+      // let response = dataList
+      this.$axios
+        .post('/userapi/get_lns/', {
+          k: this.value,
+          distance: this.distance,
+          from: this.sliderValues[0],
+          to: this.sliderValues[1],
+          epoch1: this.epoch1,
+          epoch2: this.epoch2,
+          layer1: this.layer1,
+          layer2: this.layer2
+        })
+        .then((response) => {
       d3.select(this.$refs.scatterPlot).selectAll('*').remove()
       d3.select(this.$refs.chartContainer).selectAll('*').remove()
       d3.select(this.$refs.features1).selectAll('*').remove()
@@ -338,7 +338,7 @@ export default {
 
       this.drawChart()
       this.drawHistogram()
-      // })
+      })
     },
     clickNode(data) {
       this.click_id = data.nodeId
@@ -367,20 +367,20 @@ export default {
     //点击单个节点，淡化其它节点
     click_node() {
       this.click_dimensional([this.click_id]).then((res) => this.click_dimensionalFn(res))
-      let response = data3
-      // this.$axios
-      //   .post('/userapi/click_node/', {
-      //     id: this.click_id,
-      //     epoch1: this.epoch1,
-      //     epoch2: this.epoch1,
-      //     layer1: this.layer1,
-      //     layer2: this.layer2
-      //   })
-      //   .then((response) => {
+      // let response = data3
+      this.$axios
+        .post('/userapi/click_node/', {
+          id: this.click_id,
+          epoch1: this.epoch1,
+          epoch2: this.epoch1,
+          layer1: this.layer1,
+          layer2: this.layer2
+        })
+        .then((response) => {
       this.links = response.data.link
       this.nodes = response.data.node
       this.showMatrixChart()
-      // })
+      })
     },
     showMatrixChart() {
       let nodeObj = this.nodes.reduce((pre, item) => {
@@ -459,16 +459,17 @@ export default {
       })
     },
     click_dimensional(id) {
+      this.guidanceColors=[]
       return new Promise((resolve) => {
-        this.forceData = forceData
-        // this.$axios
-        //   .post('/userapi/k_hop/', {
-        //     id: id
-        //   })
-        //   .then((response) => {
-        // this.forceData = response.data
+        // this.forceData = forceData
+        this.$axios
+          .post('/userapi/k_hop/', {
+            id: id
+          })
+          .then((response) => {
+        this.forceData = response.data
         resolve(this.forceData)
-        // })
+        })
       })
     },
     handleFileChange(event, type) {
@@ -478,6 +479,7 @@ export default {
           this.fileData[type] = results.data
           if (type == 'file1') {
             this.Label1 = this.fileData['file1'][this.epoch1]
+            this.trueLabel = this.fileData['file1'][0]
           } else if (type == 'file2') {
             this.Label2 = this.fileData['file2'][this.epoch2]
           }
@@ -529,7 +531,11 @@ export default {
     // 散点图
     drawChart() {
       const sf = this
-      const colors = d3.scaleOrdinal(d3.schemeAccent)
+      const colors =(index)=>{
+        let arr = ['#7fc97f', '#beaed4', '#fdc086', '#ffff99', '#386cb0', '#f0027f', '#bf5b17']
+        return arr[index]
+      } //d3.scaleOrdinal(d3.schemeAccent)
+      console.log(colors['0'],sf.Label2,d3.schemeAccent)
       let scatterK1 = this.scatter1.reduce((pre, item) => {
         pre[item.index] = colors(sf.Label1[item.index])
         return pre
@@ -543,12 +549,14 @@ export default {
           return !this.compareVal || scatterK2[item] !== scatterK1[item]
         })
         .map((item) => Number(item))
-      const scatter1 = this.scatter1.filter((item) => {
-        return arr.includes(Number(item.index))
-      })
-      const scatter2 = this.scatter2.filter((item) => {
-        return arr.includes(Number(item.index))
-      })
+      const scatter1 = this.scatter1
+      // .filter((item) => {
+      //   return arr.includes(Number(item.index))
+      // })
+      const scatter2 = this.scatter2
+      // .filter((item) => {
+      //   return arr.includes(Number(item.index))
+      // })
       // const scatter2 = this.scatter2
 
       // const density1 = this.density1
@@ -680,6 +688,7 @@ export default {
             return 'none'
           }
         })
+        .style('opacity',d=>arr.includes(Number(d.index))?1:0)
         .style('stroke-width', 1)
         .style('fill', (d, i) => {
           let originalColor = ''
@@ -720,6 +729,7 @@ export default {
             return 'none'
           }
         })
+        .style('opacity',d=>arr.includes(Number(d.index))?1:0)
         .style('stroke-width', 1)
         .style('fill', (d, i) => {
           let originalColor = ''
@@ -729,6 +739,7 @@ export default {
           } else if (sf.labelIndex === 1) {
             originalColor = colors(sf.trueLabel[d.index])
           } else {
+            // console.log(sf.Label2,colors(sf.Label2[d.index]),d.index,sf.Label2[d.index])
             originalColor = sf.Label2[d.index] ? colors(sf.Label2[d.index]) : 'transparent'
           }
 
@@ -1235,6 +1246,7 @@ export default {
       this.drawChart()
     },
     epoch2(newValue, oldValue) {
+      console.log(newValue)
       this.Label2 = this.fileData['file2'][newValue]
       // this.trueLabel=this.fileData['file1'][0]
       this.drawChart()

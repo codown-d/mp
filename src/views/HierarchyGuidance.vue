@@ -1,11 +1,11 @@
 <template>
   <div style="width: 100%; height: 100%">
     <div>点击的id：{{ id }}</div>
-    <svg ref="forceGuidance" style="background: #f0f0f0">
+    <svg ref="forceGuidance" style="background: #f0f0f0" >
       <defs>
         <!-- 定义一个线性渐变 -->
         <linearGradient
-          :id="'half_' + item.id"
+          :id="'halfCHY_' + item.id"
           x1="0%"
           y1="0%"
           x2="100%"
@@ -27,23 +27,24 @@
           stroke-width="1"
         ></line>
         <circle
-          v-for="item in hierarchyNodes"
+          v-for="item in hierarchyNodes.filter(item=>item.depth!=4)"
           :r="item.depth == 4  ? 6 : item.r"
           :cx="item.x"
           :cy="item.y"
-          :fill="item.data.id ? `url(#half_${item.data.id})` : '#fff'"
-          :stroke="item.data.colors ? item.data.colors[2] : '#ddd'"
-          :stroke-width="item.depth == 1 ? 0 : item.depth == 2 ? 1 : 2"
+          :fill="item.data.id ? `url(#halfCHY_${item.data.id})` : '#fff'"
+          :stroke="item.data.colors ? item.data.colors[2] : '#aaa'"
+          :stroke-width="item.depth == 1 ? 0 : item.depth == 2 ? 1 : 1"
           @click="handleClick(item.data.id)"
         ></circle>
+       
         <line
           v-for="item in link.filter((item) => item.source !== actNode && item.target !== actNode)"
           :x1="item.x1"
           :y1="item.y1"
           :x2="item.x2"
           :y2="item.y2"
-          stroke="#ddd"
-          stroke-width="1"
+          stroke="#aaa"
+          :stroke-width="0.5"
         ></line>
         <line
           v-for="item in link.filter((item) => item.source == actNode || item.target == actNode)"
@@ -52,8 +53,18 @@
           :x2="item.x2"
           :y2="item.y2"
           stroke="#f00"
-          stroke-width="1"
+          :stroke-width="0.5"
         ></line>
+        <circle
+          v-for="item in hierarchyNodes.filter(item=>item.depth==4)"
+          :r="item.depth == 4  ? 2 : item.r"
+          :cx="item.x"
+          :cy="item.y"
+          :fill="item.data.id ? `url(#halfCHY_${item.data.id})` : '#fff'"
+          :stroke="item.data.colors ? item.data.colors[2] : '#aaa'"
+          :stroke-width="item.depth == 1 ? 0 : item.depth == 2 ? 1 : 1"
+          @click="handleClick(item.data.id)"
+        ></circle>
       </g>
     </svg>
   </div>
@@ -402,7 +413,7 @@ export default {
                     ? this.brushNode.includes(d.id)
                       ? 'green'
                       : 'gray'
-                    : `url(#half_${d.id})`
+                    : `url(#halfCHY_${d.id})`
                 })
                 .on('click', (event, d) => this.handleClick(d))
               simulation.on('tick', () => {
@@ -467,10 +478,6 @@ export default {
 <style>
 svg {
   background-color: #f0f0f0;
-}
-
-line {
-  stroke-width: 2;
 }
 
 circle {
