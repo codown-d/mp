@@ -1,6 +1,6 @@
 <template>
   <div style="width: 100%; height: 100%">
-    <div>点击的id：{{ id }}</div>
+    <div>点击的id：{{ actNode }}</div>
     <svg ref="forceGuidance" style="background: #f0f0f0" >
       <defs>
         <!-- 定义一个线性渐变 -->

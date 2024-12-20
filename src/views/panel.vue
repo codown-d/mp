@@ -308,19 +308,19 @@ export default {
       this.$refs.childComponent1.renderHistoricalDataset()
     },
     get_lns() {
-      let response = dataList
-      // this.$axios
-      //   .post('/userapi/get_lns/', {
-      //     k: this.value,
-      //     distance: this.distance,
-      //     from: this.sliderValues[0],
-      //     to: this.sliderValues[1],
-      //     epoch1: this.epoch1,
-      //     epoch2: this.epoch2,
-      //     layer1: this.layer1,
-      //     layer2: this.layer2
-      //   })
-      //   .then((response) => {
+      // let response = dataList
+      this.$axios
+        .post('/userapi/get_lns/', {
+          k: this.value,
+          distance: this.distance,
+          from: this.sliderValues[0],
+          to: this.sliderValues[1],
+          epoch1: this.epoch1,
+          epoch2: this.epoch2,
+          layer1: this.layer1,
+          layer2: this.layer2
+        })
+        .then((response) => {
       d3.select(this.$refs.scatterPlot).selectAll('*').remove()
       d3.select(this.$refs.chartContainer).selectAll('*').remove()
       d3.select(this.$refs.features1).selectAll('*').remove()
@@ -338,7 +338,7 @@ export default {
 
       this.drawChart()
       this.drawHistogram()
-      // })
+      })
     },
     clickNode(data) {
       this.click_id = data.nodeId
@@ -371,20 +371,20 @@ export default {
     //点击单个节点，淡化其它节点
     click_node() {
       this.click_dimensional([this.click_id]).then((res) => this.click_dimensionalFn(res))
-      let response = data3
-      // this.$axios
-      //   .post('/userapi/click_node/', {
-      //     id: this.click_id,
-      //     epoch1: this.epoch1,
-      //     epoch2: this.epoch1,
-      //     layer1: this.layer1,
-      //     layer2: this.layer2
-      //   })
-      //   .then((response) => {
+      // let response = data3
+      this.$axios
+        .post('/userapi/click_node/', {
+          id: this.click_id,
+          epoch1: this.epoch1,
+          epoch2: this.epoch1,
+          layer1: this.layer1,
+          layer2: this.layer2
+        })
+        .then((response) => {
       this.links = response.data.link
       this.nodes = response.data.node
       this.showMatrixChart()
-      // })
+      })
     },
     showMatrixChart() {
       let nodeObj = this.nodes.reduce((pre, item) => {
@@ -465,15 +465,15 @@ export default {
     click_dimensional(id) {
       this.guidanceColors=[]
       return new Promise((resolve) => {
-        this.forceData = forceData
-        // this.$axios
-        //   .post('/userapi/k_hop/', {
-        //     id: id
-        //   })
-        //   .then((response) => {
-        // this.forceData = response.data
+        // this.forceData = forceData
+        this.$axios
+          .post('/userapi/k_hop/', {
+            id: id
+          })
+          .then((response) => {
+        this.forceData = response.data
         resolve(this.forceData)
-        // })
+        })
       })
     },
     handleFileChange(event, type) {

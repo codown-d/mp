@@ -1,4 +1,5 @@
 <template>
+  <div>ID: {{ id }}</div>
   <svg style="width: 1400; height: 600">
     <defs>
       <!-- 定义一个线性渐变 -->
@@ -30,6 +31,7 @@
         :cx="item.x"
         :cy="item.y"
         :fill="`url(#halfMV_${item.index})`"
+        @click="handleClick(item.index)"
       ></circle>
     </g>
     <g style="transform: translate(400px, 50px)">
@@ -48,6 +50,7 @@
         :cx="item.x"
         :cy="item.y"
         :fill="`url(#halfMV_${item.index})`"
+        @click="handleClick(item.index)"
       ></circle>
     </g>
     <g style="transform: translate(900px, 50px)">
@@ -60,7 +63,8 @@
         stroke="black"
         stroke-width="1"
       />
-      <circle v-for="item in matrix_2_0" :r="4" :cx="item.x" :cy="item.y" :fill="'#000'"></circle>
+      <circle v-for="item in matrix_2_0" :r="4" :cx="item.x" :cy="item.y" :fill="'#000'" 
+      @click="handleClick(item.index)"></circle>
     </g>
     <g style="transform: translate(900px, 350px)">
       <rect
@@ -72,7 +76,8 @@
         stroke="black"
         stroke-width="1"
       />
-      <circle v-for="item in matrix_2_1" :r="4" :cx="item.x" :cy="item.y" :fill="'#000'"></circle>
+      <circle v-for="item in matrix_2_1" :r="4" :cx="item.x" :cy="item.y" :fill="'#000'" 
+      @click="handleClick(item.index)"></circle>
     </g>
   </svg>
 </template>
@@ -126,7 +131,8 @@ export default {
       content: null,
       obj: {},
       hierarchyNodes: [],
-      myChart: null
+      myChart: null,
+      id:''
     }
   },
   mounted() {
@@ -210,7 +216,8 @@ export default {
     }
   },
   methods: {
-    initHierarchy() {}
+    initHierarchy() {},
+    handleClick(id){this.id = id},
   }
 }
 </script>
