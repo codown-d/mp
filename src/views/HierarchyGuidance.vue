@@ -33,7 +33,7 @@
           :cy="item.y"
           :fill="item.data.id ? `url(#halfCHY_${item.data.id})` : '#fff'"
           :stroke="item.data.colors ? item.data.colors[2] : '#aaa'"
-          :stroke-width="item.depth == 1 ? 0 : item.depth == 2 ? 1 : 1"
+          :stroke-width="item.children.length<=1&&item.depth!=3?0:1"
           @click="handleClick(item.data.id)"
         ></circle>
        
@@ -57,12 +57,12 @@
         ></line>
         <circle
           v-for="item in hierarchyNodes.filter(item=>item.depth==4)"
-          :r="item.depth == 4  ? 2 : item.r"
+          :r="item.depth == 4  ? 4 : item.r"
           :cx="item.x"
           :cy="item.y"
           :fill="item.data.id ? `url(#halfCHY_${item.data.id})` : '#fff'"
           :stroke="item.data.colors ? item.data.colors[2] : '#aaa'"
-          :stroke-width="item.depth == 1 ? 0 : item.depth == 2 ? 1 : 1"
+          :stroke-width="2"
           @click="handleClick(item.data.id)"
         ></circle>
       </g>

@@ -1,6 +1,6 @@
 <template>
   <div>ID: {{ id }}</div>
-  <svg style="width: 1400; height: 600">
+  <svg style="width: 1400; height: 600" ref="matrixView">
     <defs>
       <!-- 定义一个线性渐变 -->
       <linearGradient
@@ -15,6 +15,7 @@
         <stop offset="50%" :style="'stop-color: ' + item.colors[1] + '; stop-opacity: 1'" />
       </linearGradient>
     </defs>
+    <g class="gContentMatrixView">
     <g style="transform: translate(0px, 50px)">
       <rect
         x="20"
@@ -79,13 +80,13 @@
       <circle v-for="item in matrix_2_1" :r="4" :cx="item.x" :cy="item.y" :fill="'#000'" 
       @click="handleClick(item.index)"></circle>
     </g>
+    </g>
   </svg>
 </template>
 
 <script>
 import * as d3 from 'd3'
 import { findIndex, isEqual, isNumber, keys, find, min, max } from 'lodash'
-import * as echarts from 'echarts'
 
 export default {
   props: {
@@ -136,11 +137,12 @@ export default {
     }
   },
   mounted() {
-    // this.initHierarchy()
+    this.initHierarchy()
   },
   watch: {},
   computed: {
     start() {
+      if(!this.$props.result_nodes['start'])return;
       let plotNodes = this.$props.result_nodes['start'].map((item) => {
         return [item.x, item.y]
       })
@@ -161,6 +163,7 @@ export default {
       })
     },
     matrix_1_0() {
+      if(!this.$props.result_nodes['matrix_1_0'])return;
       let plotNodes = this.$props.result_nodes['matrix_1_0'].map((item) => {
         return [item.x, item.y]
       })
@@ -179,6 +182,7 @@ export default {
       })
     },
     matrix_2_0() {
+      if(!this.$props.result_nodes['matrix_2_0'])return;
       let plotNodes = this.$props.result_nodes['matrix_2_0'].map((item) => {
         return [item.x, item.y]
       })
@@ -197,6 +201,7 @@ export default {
       })
     },
     matrix_2_1() {
+      if(!this.$props.result_nodes['matrix_2_1'])return;
       let plotNodes = this.$props.result_nodes['matrix_2_1'].map((item) => {
         return [item.x, item.y]
       })
@@ -216,7 +221,19 @@ export default {
     }
   },
   methods: {
-    initHierarchy() {},
+    initHierarchy() {
+      this.svg = d3
+        .select(this.$refs.matrixView)
+      this.svg.call(
+        d3
+          .zoom()
+          .scaleExtent([0.1, 4])
+          .on('zoom', (event) => {
+            let { transform } = event
+            d3.select('.gContentMatrixView').transition().duration(10).attr('transform', transform)
+          })
+      )
+    },
     handleClick(id){this.id = id},
   }
 }
