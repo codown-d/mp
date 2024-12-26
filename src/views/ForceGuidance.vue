@@ -207,7 +207,6 @@ export default {
           }, 25)
         }
       })
-      console.log(arr,nodes ,this.nodesRect)
       let rects = arr
       this.content
         .selectAll('rect')

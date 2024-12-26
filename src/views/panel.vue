@@ -171,10 +171,17 @@
         </a-tab-pane>
         <a-tab-pane key="3" tab="策略3">
           <matrix-view
+            v-if="false"
             :result_edge="forceData.result_edge"
             :result_nodes="forceData.result_nodes"
             :guidanceColors="guidanceColors"
           ></matrix-view>
+          <matrix-force-view
+            v-else
+            :result_edge="forceData.result_edge"
+            :result_nodes="forceData.result_nodes"
+            :guidanceColors="guidanceColors"
+          ></matrix-force-view>
         </a-tab-pane>
       </a-tabs>
 
@@ -212,6 +219,7 @@ import ChartPlot from './ChartPlot.vue'
 import ForceGuidance from './ForceGuidance.vue'
 import HierarchyGuidance from './HierarchyGuidance.vue'
 import MatrixView from './MatrixView.vue'
+import MatrixForceView from './MatrixForceView.vue'
 import { find, groupBy, values, keys } from 'lodash'
 let scale = 1
 const scaleFactor = 1.1 // 每次滚动放大的比例
@@ -222,7 +230,8 @@ export default {
     'chart-plot': ChartPlot,
     'hierarchy-guidance': HierarchyGuidance,
     'force-guidance': ForceGuidance,
-    'matrix-view': MatrixView
+    'matrix-view': MatrixView,
+    'matrix-force-view': MatrixForceView
   },
   data() {
     return {
@@ -349,11 +358,10 @@ export default {
         ...res.result_nodes['start'],
         ...res.result_nodes['first order'],
         ...res.result_nodes['second order'],
-        ...res.result_nodes['matrix_1_0'].map(item=>item.index),
-        ...res.result_nodes['matrix_2_0'].map(item=>item.index),
-        ...res.result_nodes['matrix_2_1'].map(item=>item.index),
+        ...res.result_nodes['matrix_1_0'].map((item) => item.index),
+        ...res.result_nodes['matrix_2_0'].map((item) => item.index),
+        ...res.result_nodes['matrix_2_1'].map((item) => item.index)
       ]
-      console.log(res)
       if (this.labelIndex == 2) {
         this.guidanceColors = nodes.reduce((pre, item) => {
           pre.push({
@@ -463,7 +471,7 @@ export default {
       })
     },
     click_dimensional(id) {
-      this.guidanceColors=[]
+      this.guidanceColors = []
       return new Promise((resolve) => {
         this.forceData = forceData
         // this.$axios
@@ -535,11 +543,10 @@ export default {
     // 散点图
     drawChart() {
       const sf = this
-      const colors =(index)=>{
+      const colors = (index) => {
         let arr = ['#7fc97f', '#beaed4', '#fdc086', '#ffff99', '#386cb0', '#f0027f', '#bf5b17']
         return arr[index]
       } //d3.scaleOrdinal(d3.schemeAccent)
-      console.log(colors['0'],sf.Label2,d3.schemeAccent)
       let scatterK1 = this.scatter1.reduce((pre, item) => {
         pre[item.index] = colors(sf.Label1[item.index])
         return pre
@@ -692,7 +699,7 @@ export default {
             return 'none'
           }
         })
-        .style('opacity',d=>arr.includes(Number(d.index))?1:0)
+        .style('opacity', (d) => (arr.includes(Number(d.index)) ? 1 : 0))
         .style('stroke-width', 1)
         .style('fill', (d, i) => {
           let originalColor = ''
@@ -733,7 +740,7 @@ export default {
             return 'none'
           }
         })
-        .style('opacity',d=>arr.includes(Number(d.index))?1:0)
+        .style('opacity', (d) => (arr.includes(Number(d.index)) ? 1 : 0))
         .style('stroke-width', 1)
         .style('fill', (d, i) => {
           let originalColor = ''
@@ -1149,7 +1156,6 @@ export default {
 
       const groupedStart = groupBy(start, 'parentKey')
 
-      console.log(groupedStart)
       // const groupedStart = groupBy(start, 'key')
       const groupedFirst = groupBy(first, 'parentKey')
       const groupedSecond = groupBy(second, 'parentKey')
@@ -1212,7 +1218,6 @@ export default {
           }
         ]
       }
-      console.log(d)
       return d
     }
   },
@@ -1250,7 +1255,6 @@ export default {
       this.drawChart()
     },
     epoch2(newValue, oldValue) {
-      console.log(newValue)
       this.Label2 = this.fileData['file2'][newValue]
       // this.trueLabel=this.fileData['file1'][0]
       this.drawChart()

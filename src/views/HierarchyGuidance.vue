@@ -121,7 +121,6 @@ export default {
   },
   computed: {
     link() {
-      console.log(this.hierarchyNodes)
       if (this.hierarchyNodes.length == 0) return []
       return this.result_edge.map((item) => {
         let { source, target } = item
@@ -145,14 +144,12 @@ export default {
   watch: {
     dataList: {
       handler(newValue) {
-        console.log(newValue)
         this.initHierarchy()
       }
     },
     guidanceColors: {
       handler(newValue) {
         this.drawChart()
-        console.log(newValue)
       }
     },
     result_edge: {
@@ -177,7 +174,6 @@ export default {
     initHierarchy() {
       if (!this.dataList) return
       const colors = d3.scaleOrdinal(d3.schemeAccent)
-      console.log(this.dataList, this.guidanceColors)
       this.svg = d3
         .select(this.$refs.forceGuidance)
         .attr('width', this.width)
@@ -210,7 +206,6 @@ export default {
           y:item.x
         }
       })
-      console.log(this.hierarchyNodes)
       let first = find(this.hierarchyNodes, (item) => {
         return item.data.type == 'first'
       })
@@ -247,7 +242,6 @@ export default {
         }
         return item
       })
-      console.log(this.hierarchyNodes)
     },
     culNodes(newValue) {
       return
@@ -368,7 +362,6 @@ export default {
           }, 25)
         }
       })
-      console.log(arr, nodes, this.nodesRect)
       let rects = arr
       this.content
         .selectAll('rect')
