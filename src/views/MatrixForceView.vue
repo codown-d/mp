@@ -84,7 +84,7 @@
           stroke-width="1"
         />
         <circle
-          v-for="item in matrix_2_1"
+          v-for="item in matrix_2_1_data"
           :r="4"
           :cx="item.x"
           :cy="item.y"
@@ -109,7 +109,9 @@ import {
   cloneDeep,
   pow,
   add,
-  subtract
+  subtract,
+  groupBy,
+  flatten
 } from 'lodash'
 
 export default {
@@ -171,40 +173,14 @@ export default {
   watch: {
     result_nodes: {
       handler(newVal, oldVal) {
+        console.log(newVal)
         let start = newVal['start'] ? newVal['start'] : []
         let matrix_1_0 = newVal['matrix_1_0'] ? newVal['matrix_1_0'] : []
         let matrix_2_0 = newVal['matrix_2_0'] ? newVal['matrix_2_0'] : []
         let matrix_2_1 = newVal['matrix_2_1'] ? newVal['matrix_2_1'] : []
-        this.dec = [...start, ...matrix_1_0, ...matrix_2_0, ...matrix_2_1]
-        .reduce((pre, item) => {
-          pre[item.index] = this.calculateDistance(item)
-          return pre
-        }, {})
-        console.log(this.dec)
-        // if (newVal['start']) {
-        //   this.start = newVal['start']
-        //     ? cloneDeep(newVal['start'].map((item) => ({ ...item, id: item.index })))
-        //     : []
-        //   this.start.length != 0 && this.culForceData(this.start, 190, 300)
-        // }
-        // if (newVal['matrix_1_0']) {
-        //   this.matrix_1_0 = newVal['matrix_1_0']
-        //     ? cloneDeep(newVal['matrix_1_0'].map((item) => ({ ...item, id: item.index })))
-        //     : []
-        //   this.matrix_1_0.length != 0 && this.culForceData(this.matrix_1_0, 200, 300)
-        // }
-        if (newVal['matrix_2_0']) {
-          this.matrix_2_0 = newVal['matrix_2_0']
-            ? cloneDeep(newVal['matrix_2_0'].map((item) => ({ ...item, id: item.index })))
-            : []
-          this.matrix_2_0.length != 0 && this.culForceData(this.matrix_2_0, 0, 0)
-        }
-        // if (newVal['matrix_2_1']) {
-        //   this.matrix_2_1 = newVal['matrix_2_1']
-        //     ? cloneDeep(newVal['matrix_2_1'].map((item) => ({ ...item, id: item.index })))
-        //     : []
-        //   this.matrix_2_1.length != 0 && this.culForceData(this.matrix_2_1, 200, 112)
-        // }
+        this.culForceData( matrix_2_1).then((res) => {
+          this.matrix_2_1 = flatten(res)
+        })
       },
       deep: true
     }
@@ -269,25 +245,25 @@ export default {
     //     return item
     //   })
     // },
-    // matrix_2_1() {
-    //   if (!this.$props.result_nodes['matrix_2_1']) return
-    //   let plotNodes = this.$props.result_nodes['matrix_2_1'].map((item) => {
-    //     return [item.x, item.y]
-    //   })
-    //   const xScale_0 = d3
-    //     .scaleLinear()
-    //     .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
-    //     .range([50, (this.width / 3) * 0.8]) //this.width/3
-    //   const yScale_0 = d3
-    //     .scaleLinear()
-    //     .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
-    //     .range([50, (this.height / 2 - 75) * 0.8])
-    //   return this.$props.result_nodes['matrix_2_1'].map((item) => {
-    //     item.x = xScale_0(item.x)
-    //     item.y = yScale_0(item.y)
-    //     return item
-    //   })
-    // }
+    matrix_2_1_data() {
+      console.log(this.matrix_2_1)
+      let plotNodes = this.matrix_2_1.map((item) => {
+        return [item.x, item.y]
+      })
+      const xScale_0 = d3
+        .scaleLinear()
+        .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
+        .range([50, (this.width / 3) * 0.8])
+      const yScale_0 = d3
+        .scaleLinear()
+        .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
+        .range([50, (this.height / 2 - 75) * 0.8])
+      return this.matrix_2_1.map((item) => {
+        item.x = xScale_0(item.x)
+        item.y = yScale_0(item.y)
+        return item
+      })
+    }
   },
   methods: {
     calculateDistance(point1, point2 = { x: 0, y: 0 }) {
@@ -311,35 +287,37 @@ export default {
     handleClick(id) {
       this.id = id
     },
-    culForceData(nodes, width, height) {
+    culForceData(list) {
       let sf = this
-      function customForce() {
-        return d3.forceManyBody().strength((node) => {
-          // if (sf.dec[node.id]) {
-          //   console.log(12354)
-          //   return sf.dec[node.id]
-          // }
-          return 200
+      let result = groupBy(cloneDeep(list), (item) => {
+        return `${item.x}_${item.y}`
+      })
+      console.log(result)
+      return Promise.all(
+        keys(result).map((item) => {
+          let [width, height] = item.split('_')
+          if (result[item].length == 1) {
+            return Promise.resolve(result[item])
+          } else {
+            return new Promise((resolve, reject) => {
+              let nodes = result[item]
+              const simulation = d3
+                .forceSimulation(nodes)
+                .force('charge', d3.forceManyBody().strength(-10))
+                .force('center', d3.forceCenter(width, height))
+                .force(
+                  'collision',
+                  d3.forceCollide().radius((d) => d.r)
+                )
+                .alphaMin(0.3)
+              simulation.on('end', () => {
+                simulation.stop();
+                resolve(nodes)
+              })
+            })
+          }
         })
-      }
-
-      function ticked() {
-        d3.select('svg')
-          .selectAll('circle')
-          .data(nodes)
-          .attr('cx', (d) => d.x)
-          .attr('cy', (d) => d.y)
-      }
-      const simulation = d3
-        .forceSimulation(nodes)
-        .force('charge', d3.forceManyBody().strength(100)) // 普通斥力
-        .force('center', d3.forceCenter(width, height)) // 画布中心力
-        .force(
-          'collision',
-          d3.forceCollide().radius((d) => sf.dec[d.id])
-        )
-        // .force('custom', customForce()) // 自定义力
-        .on('tick', ticked)
+      )
     }
   }
 }
