@@ -170,14 +170,7 @@
           ></hierarchy-guidance>
         </a-tab-pane>
         <a-tab-pane key="3" tab="策略3">
-          <matrix-view
-            v-if="false"
-            :result_edge="forceData.result_edge"
-            :result_nodes="forceData.result_nodes"
-            :guidanceColors="guidanceColors"
-          ></matrix-view>
           <matrix-force-view
-            v-else
             :result_edge="forceData.result_edge"
             :result_nodes="forceData.result_nodes"
             :guidanceColors="guidanceColors"

@@ -27,12 +27,14 @@
           stroke-width="1"
         />
         <circle
-          v-for="item in start"
+          v-for="item in start_data"
           :r="4"
           :cx="item.x"
           :cy="item.y"
-          :fill="'#000'"
+          :fill="`url(#halfMV_${item.index})`"
           @click="handleClick(item.index)"
+          :stroke="getStrokeColor(item.id)"
+          stroke-width="1"
         ></circle>
       </g>
       <g style="transform: translate(400px, 50px)">
@@ -46,12 +48,14 @@
           stroke-width="1"
         />
         <circle
-          v-for="item in matrix_1_0"
+          v-for="item in matrix_1_0_data"
           :r="4"
           :cx="item.x"
           :cy="item.y"
-          :fill="'#000'"
+          :fill="`url(#halfMV_${item.index})`"
           @click="handleClick(item.index)"
+          :stroke="getStrokeColor(item.id)"
+          stroke-width="1"
         ></circle>
       </g>
       <g style="transform: translate(900px, 50px)">
@@ -65,12 +69,14 @@
           stroke-width="1"
         />
         <circle
-          v-for="item in matrix_2_0"
+          v-for="item in matrix_2_0_data"
           :r="4"
           :cx="item.x"
           :cy="item.y"
-          :fill="'#000'"
+          :fill="`url(#halfMV_${item.index})`"
           @click="handleClick(item.index)"
+          :stroke="getStrokeColor(item.id)"
+          stroke-width="1"
         ></circle>
       </g>
       <g style="transform: translate(900px, 350px)">
@@ -88,8 +94,10 @@
           :r="4"
           :cx="item.x"
           :cy="item.y"
-          :fill="'#000'"
+          :fill="`url(#halfMV_${item.index})`"
           @click="handleClick(item.index)"
+          :stroke="getStrokeColor(item.id)"
+          stroke-width="1"
         ></circle>
       </g>
     </g>
@@ -168,6 +176,7 @@ export default {
     }
   },
   mounted() {
+    console.log(this.$props)
     this.initHierarchy()
   },
   watch: {
@@ -178,7 +187,16 @@ export default {
         let matrix_1_0 = newVal['matrix_1_0'] ? newVal['matrix_1_0'] : []
         let matrix_2_0 = newVal['matrix_2_0'] ? newVal['matrix_2_0'] : []
         let matrix_2_1 = newVal['matrix_2_1'] ? newVal['matrix_2_1'] : []
-        this.culForceData( matrix_2_1).then((res) => {
+        this.culForceData(start).then((res) => {
+          this.start = flatten(res)
+        })
+        this.culForceData(matrix_1_0).then((res) => {
+          this.matrix_1_0 = flatten(res)
+        })
+        this.culForceData(matrix_2_0).then((res) => {
+          this.matrix_2_0 = flatten(res)
+        })
+        this.culForceData(matrix_2_1).then((res) => {
           this.matrix_2_1 = flatten(res)
         })
       },
@@ -186,67 +204,63 @@ export default {
     }
   },
   computed: {
-    // start() {
-    //   if (!this.$props.result_nodes['start']) return
-    //   let plotNodes = this.$props.result_nodes['start'].map((item) => {
-    //     return [item.x, item.y]
-    //   })
-    //   const xScale_0 = d3
-    //     .scaleLinear()
-    //     .domain([50, (this.width / 3) * 0.8])
-    //     .range([50, (this.width / 3) * 0.8])
-    //   const yScale_0 = d3
-    //     .scaleLinear()
-    //     .domain([50, (this.height - 100) * 0.8])
-    //     .range([50, (this.height - 100) * 0.8])
-    //   return this.$props.result_nodes['start'].map((item) => {
-    //     return {
-    //       index: item,
-    //       x: ((Math.random() * this.width) / 4) * 0.7 + 50,
-    //       y: Math.random() * this.height * 0.7 + 50
-    //     }
-    //   })
-    // },
-    // matrix_1_0() {
-    //   if (!this.$props.result_nodes['matrix_1_0']) return
-    //   let plotNodes = this.$props.result_nodes['matrix_1_0'].map((item) => {
-    //     return [item.x, item.y]
-    //   })
-    //   const xScale_0 = d3
-    //     .scaleLinear()
-    //     .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
-    //     .range([50, (this.width / 3) * 0.8]) //this.width/3
-    //   const yScale_0 = d3
-    //     .scaleLinear()
-    //     .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
-    //     .range([50, (this.height - 100) * 0.8])
-    //   return this.$props.result_nodes['matrix_1_0'].map((item) => {
-    //     item.x = xScale_0(item.x)
-    //     item.y = yScale_0(item.y)
-    //     return item
-    //   })
-    // },
-    // matrix_2_0() {
-    //   if (!this.$props.result_nodes['matrix_2_0']) return
-    //   let plotNodes = this.$props.result_nodes['matrix_2_0'].map((item) => {
-    //     return [item.x, item.y]
-    //   })
-    //   const xScale_0 = d3
-    //     .scaleLinear()
-    //     .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
-    //     .range([50, (this.width / 3) * 0.8]) //this.width/3
-    //   const yScale_0 = d3
-    //     .scaleLinear()
-    //     .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
-    //     .range([50, (this.height / 2 - 75) * 0.8])
-    //   return this.$props.result_nodes['matrix_2_0'].map((item) => {
-    //     item.x = xScale_0(item.x)
-    //     item.y = yScale_0(item.y)
-    //     return item
-    //   })
-    // },
+    start_data() {
+      let plotNodes = this.start.map((item) => {
+        return [item.x, item.y]
+      })
+      const xScale_0 = d3
+        .scaleLinear()
+        .domain([50, (this.width / 3) * 0.8])
+        .range([50, (this.width / 3) * 0.8])
+      const yScale_0 = d3
+        .scaleLinear()
+        .domain([50, (this.height - 100) * 0.8])
+        .range([50, (this.height - 100) * 0.8])
+      return this.start.map((item) => {
+        return {
+          index: item,
+          x: ((Math.random() * this.width) / 4) * 0.7 + 50,
+          y: Math.random() * this.height * 0.7 + 50
+        }
+      })
+    },
+    matrix_1_0_data() {
+      let plotNodes = this.matrix_1_0.map((item) => {
+        return [item.x, item.y]
+      })
+      const xScale_0 = d3
+        .scaleLinear()
+        .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
+        .range([50, (this.width / 3) * 0.8]) //this.width/3
+      const yScale_0 = d3
+        .scaleLinear()
+        .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
+        .range([50, (this.height - 100) * 0.8])
+      return this.matrix_1_0.map((item) => {
+        item.x = xScale_0(item.x)
+        item.y = yScale_0(item.y)
+        return item
+      })
+    },
+    matrix_2_0_data() {
+      let plotNodes = this.matrix_2_0.map((item) => {
+        return [item.x, item.y]
+      })
+      const xScale_0 = d3
+        .scaleLinear()
+        .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
+        .range([50, (this.width / 3) * 0.8])
+      const yScale_0 = d3
+        .scaleLinear()
+        .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
+        .range([50, (this.height / 2 - 75) * 0.8])
+      return this.matrix_2_0.map((item) => {
+        item.x = xScale_0(item.x)
+        item.y = yScale_0(item.y)
+        return item
+      })
+    },
     matrix_2_1_data() {
-      console.log(this.matrix_2_1)
       let plotNodes = this.matrix_2_1.map((item) => {
         return [item.x, item.y]
       })
@@ -266,6 +280,10 @@ export default {
     }
   },
   methods: {
+    getStrokeColor(id) {
+      let node = find(this.guidanceColors, (item) => item.item === id).colors
+      return node ? node[2] : 'black'
+    },
     calculateDistance(point1, point2 = { x: 0, y: 0 }) {
       if (!point1.x) return 1
       const dx = point2.x - point1.x
@@ -311,7 +329,7 @@ export default {
                 )
                 .alphaMin(0.3)
               simulation.on('end', () => {
-                simulation.stop();
+                simulation.stop()
                 resolve(nodes)
               })
             })
