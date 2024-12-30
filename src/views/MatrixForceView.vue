@@ -310,7 +310,6 @@ export default {
       let result = groupBy(cloneDeep(list), (item) => {
         return `${item.x}_${item.y}`
       })
-      console.log(result)
       return Promise.all(
         keys(result).map((item) => {
           let [width, height] = item.split('_')
