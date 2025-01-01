@@ -31,8 +31,8 @@
           :r="4"
           :cx="item.x"
           :cy="item.y"
-          :fill="`url(#halfMV_${item.index})`"
-          @click="handleClick(item.index)"
+          :fill="`url(#halfMV_${item.id})`"
+          @click="handleClick(item.id)"
           :stroke="getStrokeColor(item.id)"
           stroke-width="1"
         ></circle>
@@ -52,8 +52,8 @@
           :r="4"
           :cx="item.x"
           :cy="item.y"
-          :fill="`url(#halfMV_${item.index})`"
-          @click="handleClick(item.index)"
+          :fill="`url(#halfMV_${item.id})`"
+          @click="handleClick(item.id)"
           :stroke="getStrokeColor(item.id)"
           stroke-width="1"
         ></circle>
@@ -73,8 +73,8 @@
           :r="4"
           :cx="item.x"
           :cy="item.y"
-          :fill="`url(#halfMV_${item.index})`"
-          @click="handleClick(item.index)"
+          :fill="`url(#halfMV_${item.id})`"
+          @click="handleClick(item.id)"
           :stroke="getStrokeColor(item.id)"
           stroke-width="1"
         ></circle>
@@ -94,8 +94,8 @@
           :r="4"
           :cx="item.x"
           :cy="item.y"
-          :fill="`url(#halfMV_${item.index})`"
-          @click="handleClick(item.index)"
+          :fill="getFillColor(item)"
+          @click="handleClick(item.id)"
           :stroke="getStrokeColor(item.id)"
           stroke-width="1"
         ></circle>
@@ -187,9 +187,10 @@ export default {
         let matrix_1_0 = newVal['matrix_1_0'] ? newVal['matrix_1_0'] : []
         let matrix_2_0 = newVal['matrix_2_0'] ? newVal['matrix_2_0'] : []
         let matrix_2_1 = newVal['matrix_2_1'] ? newVal['matrix_2_1'] : []
-        this.culForceData(start).then((res) => {
-          this.start = flatten(res)
-        })
+        this.start = []
+        // this.culForceData(start).then((res) => {
+        //   this.start = flatten(res)
+        // })
         this.culForceData(matrix_1_0).then((res) => {
           this.matrix_1_0 = flatten(res)
         })
@@ -198,6 +199,7 @@ export default {
         })
         this.culForceData(matrix_2_1).then((res) => {
           this.matrix_2_1 = flatten(res)
+          console.log(this.matrix_2_1)
         })
       },
       deep: true
@@ -254,6 +256,7 @@ export default {
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
         .range([50, (this.height / 2 - 75) * 0.8])
+      console.log(this.matrix_2_0)
       return this.matrix_2_0.map((item) => {
         item.x = xScale_0(item.x)
         item.y = yScale_0(item.y)
@@ -280,9 +283,13 @@ export default {
     }
   },
   methods: {
+    getFillColor(item) {
+      return item.vx ? '#f00' : `url(#halfMV_${item.id})`
+    },
     getStrokeColor(id) {
-      let node = find(this.guidanceColors, (item) => item.item === id).colors
-      return node ? node[2] : 'black'
+      let node = find(this.guidanceColors, (item) => item.item === id)
+      let cr = node ? node.colors[2] : 'black'
+      return cr
     },
     calculateDistance(point1, point2 = { x: 0, y: 0 }) {
       if (!point1.x) return 1
@@ -307,9 +314,13 @@ export default {
     },
     culForceData(list) {
       let sf = this
-      let result = groupBy(cloneDeep(list), (item) => {
-        return `${item.x}_${item.y}`
-      })
+      let result = groupBy(
+        cloneDeep(list).map((item) => ({ ...item, id: item.index })),
+        (item) => {
+          return `${item.x}_${item.y}`
+        }
+      )
+      console.log(result)
       return Promise.all(
         keys(result).map((item) => {
           let [width, height] = item.split('_')
@@ -320,13 +331,16 @@ export default {
               let nodes = result[item]
               const simulation = d3
                 .forceSimulation(nodes)
-                .force('charge', d3.forceManyBody().strength(-10))
+                .force('charge', d3.forceManyBody().strength(-100))
                 .force('center', d3.forceCenter(width, height))
                 .force(
                   'collision',
-                  d3.forceCollide().radius((d) => d.r)
+                  d3.forceCollide().radius((d) => d.r + 5)
                 )
-                .alphaMin(0.3)
+                .force('x', d3.forceX(width ).strength(0.1)) // 吸引到 X 中心
+                .force('y', d3.forceY(height).strength(0.1)) // 吸引到 Y 中心
+                .on('tick', ticked)
+              function ticked() {}
               simulation.on('end', () => {
                 simulation.stop()
                 resolve(nodes)
