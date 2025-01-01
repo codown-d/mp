@@ -73,7 +73,7 @@
           :r="4"
           :cx="item.x"
           :cy="item.y"
-          :fill="`url(#halfMV_${item.id})`"
+          :fill="getFillColor(item)"
           @click="handleClick(item.id)"
           :stroke="getStrokeColor(item.id)"
           stroke-width="1"
@@ -187,19 +187,26 @@ export default {
         let matrix_1_0 = newVal['matrix_1_0'] ? newVal['matrix_1_0'] : []
         let matrix_2_0 = newVal['matrix_2_0'] ? newVal['matrix_2_0'] : []
         let matrix_2_1 = newVal['matrix_2_1'] ? newVal['matrix_2_1'] : []
-        this.start = []
-        // this.culForceData(start).then((res) => {
-        //   this.start = flatten(res)
-        // })
+        this.culForceData(
+          start.map((item) => {
+            return {
+              index: item,
+              x: ((Math.random() * this.width) / 4) * 0.7 + 50,
+              y: Math.random() * this.height * 0.7 + 50
+            }
+          })
+        ).then((res) => {
+          this.start = flatten(res)
+        })
         this.culForceData(matrix_1_0).then((res) => {
           this.matrix_1_0 = flatten(res)
         })
         this.culForceData(matrix_2_0).then((res) => {
           this.matrix_2_0 = flatten(res)
         })
+        console.log(matrix_2_1)
         this.culForceData(matrix_2_1).then((res) => {
           this.matrix_2_1 = flatten(res)
-          console.log(this.matrix_2_1)
         })
       },
       deep: true
@@ -219,11 +226,7 @@ export default {
         .domain([50, (this.height - 100) * 0.8])
         .range([50, (this.height - 100) * 0.8])
       return this.start.map((item) => {
-        return {
-          index: item,
-          x: ((Math.random() * this.width) / 4) * 0.7 + 50,
-          y: Math.random() * this.height * 0.7 + 50
-        }
+        return { ...item }
       })
     },
     matrix_1_0_data() {
@@ -331,16 +334,23 @@ export default {
               let nodes = result[item]
               const simulation = d3
                 .forceSimulation(nodes)
-                .force('charge', d3.forceManyBody().strength(-100))
+                .force('charge', d3.forceManyBody().strength(-100).distanceMin(1).distanceMax(100))
                 .force('center', d3.forceCenter(width, height))
                 .force(
                   'collision',
-                  d3.forceCollide().radius((d) => d.r + 5)
+                  d3.forceCollide().radius((d) => {
+                    return 8
+                  })
                 )
-                .force('x', d3.forceX(width ).strength(0.1)) // 吸引到 X 中心
-                .force('y', d3.forceY(height).strength(0.1)) // 吸引到 Y 中心
+                .force('x', d3.forceX()) // 吸引到 X 中心
+                .force('y', d3.forceY()) // 吸引到 Y 中心
                 .on('tick', ticked)
-              function ticked() {}
+              function ticked() {
+                console.log(123)
+                //         node
+                // .attr("cx", d => d.x)
+                // .attr("cy", d => d.y);
+              }
               simulation.on('end', () => {
                 simulation.stop()
                 resolve(nodes)
