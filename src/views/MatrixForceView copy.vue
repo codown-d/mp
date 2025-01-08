@@ -187,27 +187,27 @@ export default {
         let matrix_1_0 = newVal['matrix_1_0'] ? newVal['matrix_1_0'] : []
         let matrix_2_0 = newVal['matrix_2_0'] ? newVal['matrix_2_0'] : []
         let matrix_2_1 = newVal['matrix_2_1'] ? newVal['matrix_2_1'] : []
-        // this.culForceData(
-        //   start.map((item) => {
-        //     return {
-        //       index: item,
-        //       x: ((Math.random() * this.width) / 4) * 0.7 + 50,
-        //       y: Math.random() * this.height * 0.7 + 50
-        //     }
-        //   })
-        // ).then((res) => {
-        //   this.start = flatten(res)
-        // })
-        // this.culForceData(matrix_1_0).then((res) => {
-        //   this.matrix_1_0 = flatten(res)
-        // })
-        this.culForceData([...matrix_2_0]).then((res) => {
+        this.culForceData(
+          start.map((item) => {
+            return {
+              index: item,
+              x: ((Math.random() * this.width) / 4) * 0.7 + 50,
+              y: Math.random() * this.height * 0.7 + 50
+            }
+          })
+        ).then((res) => {
+          this.start = flatten(res)
+        })
+        this.culForceData(matrix_1_0).then((res) => {
+          this.matrix_1_0 = flatten(res)
+        })
+        this.culForceData(matrix_2_0).then((res) => {
           this.matrix_2_0 = flatten(res)
         })
         console.log(matrix_2_1)
-        // this.culForceData(matrix_2_1).then((res) => {
-        //   this.matrix_2_1 = flatten(res)
-        // })
+        this.culForceData(matrix_2_1).then((res) => {
+          this.matrix_2_1 = flatten(res)
+        })
       },
       deep: true
     }
@@ -316,7 +316,6 @@ export default {
       this.id = id
     },
     culForceData(list) {
-
       let sf = this
       let result = groupBy(
         cloneDeep(list).map((item) => ({ ...item, id: item.index })),
@@ -324,21 +323,28 @@ export default {
           return `${item.x}_${item.y}`
         }
       )
-      console.log(result,list)
-      return Promise.all([
-            new Promise((resolve, reject) => {
-              let nodes = cloneDeep(list.map(item=>({...item,id:item.index})))
+      console.log(result)
+      return Promise.all(
+        keys(result).map((item) => {
+          let [width, height] = item.split('_')
+          if (result[item].length == 0) {
+            return Promise.resolve(result[item])
+          } else {
+            return new Promise((resolve, reject) => {
+              let nodes = result[item]
               const simulation = d3
                 .forceSimulation(nodes)
-                // .force('charge', d3.forceManyBody())
-                // .force('center', d3.forceCenter(600, 600))
-                // .force('x', d3.forceX().strength(0.01)) // 吸引到 X 中心
-                // .force('y', d3.forceY().strength(0.01)) // 吸引到 Y 中心 
+                // .force('charge', d3.forceManyBody().strength(7))
+                // .force('center', d3.forceCenter(width, height))
+                // .force('x', d3.forceX().strength(0.06)) // 吸引到 X 中心
+                // .force('y', d3.forceY().strength(0.06)) // 吸引到 Y 中心 
                 .force('collide', d3.forceCollide().radius(d=>{
-                  return d.r?d.r+1:5
+                  console.log(d)
+                  return 10 //d.r+1
                 }))
                 .on('tick', ticked)
               function ticked() {
+                console.log(123)
                 //         node
                 // .attr("cx", d => d.x)
                 // .attr("cy", d => d.y);
@@ -347,7 +353,9 @@ export default {
                 simulation.stop()
                 resolve(nodes)
               })
-        })]
+            })
+          }
+        })
       )
     }
   }
