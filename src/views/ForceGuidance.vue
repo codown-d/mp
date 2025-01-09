@@ -264,7 +264,12 @@ export default {
               simulation.on('tick', () => {
                 node
                   .attr('cx', (d) => {
-                    d.x = Math.max(rect.x, Math.min(rect.x + rect.width, d.x))
+                   // d.x = Math.max(rect.x, Math.min(rect.x + rect.width, d.x))
+                    if(rect.x> Math.min(rect.x + rect.width, d.x)){
+                      d.x=rect.x
+                    }else{
+                      d.x=Math.min(rect.x + rect.width, d.x)
+                    }
                     return d.x
                   })
                   .attr('cy', (d) => {

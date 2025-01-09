@@ -1,6 +1,6 @@
 <template>
   <div>ID: {{ id }}</div>
-  <svg style="width: 1400; height: 600" ref="matrixView">
+  <svg ref="matrixView">
     <defs>
       <!-- 定义一个线性渐变 -->
       <linearGradient
@@ -15,92 +15,6 @@
         <stop offset="50%" :style="'stop-color: ' + item.colors[1] + '; stop-opacity: 1'" />
       </linearGradient>
     </defs>
-    <g class="gContentMatrixView">
-      <g style="transform: translate(0px, 50px)" v-if="false">
-        <rect
-          x="20"
-          y="0"
-          width="380"
-          height="500"
-          fill="transparent"
-          stroke="black"
-          stroke-width="1"
-        />
-        <circle
-          v-for="item in start_data"
-          :r="4"
-          :cx="item.x"
-          :cy="item.y"
-          :fill="`url(#halfMV_${item.id})`"
-          @click="handleClick(item.id)"
-          :stroke="getStrokeColor(item.id)"
-          stroke-width="1"
-        ></circle>
-      </g>
-      <g style="transform: translate(400px, 50px)" v-if="false">
-        <rect
-          x="20"
-          y="0"
-          width="400"
-          height="500"
-          fill="transparent"
-          stroke="black"
-          stroke-width="1"
-        />
-        <circle
-          v-for="item in matrix_1_0_data"
-          :r="4"
-          :cx="item.x"
-          :cy="item.y"
-          :fill="`url(#halfMV_${item.id})`"
-          @click="handleClick(item.id)"
-          :stroke="getStrokeColor(item.id)"
-          stroke-width="1"
-        ></circle>
-      </g>
-      <g style="transform: translate(900px, 50px)">
-        <rect
-          x="0"
-          y="0"
-          width="400"
-          height="225"
-          fill="transparent"
-          stroke="black"
-          stroke-width="1"
-        />
-        <circle
-          v-for="item in matrix_2_0_data"
-          :r="4"
-          :cx="item.x"
-          :cy="item.y"
-          :fill="getFillColor(item)"
-          @click="handleClick(item.id)"
-          :stroke="getStrokeColor(item.id)"
-          stroke-width="1"
-        ></circle>
-      </g>
-      <g style="transform: translate(900px, 350px)" v-if="false">
-        <rect
-          x="0"
-          y="0"
-          width="400"
-          height="225"
-          fill="transparent"
-          stroke="black"
-          stroke-width="1"
-        />
-        <circle
-          v-for="item in matrix_2_1_data"
-          :r="4"
-          :cx="item.x"
-          :cy="item.y"
-          :fill="getFillColor(item)"
-          @click="handleClick(item.id)"
-          :stroke="getStrokeColor(item.id)"
-          stroke-width="1"
-        ></circle>
-      </g>
-    </g>
   </svg>
 </template>
 
@@ -187,27 +101,27 @@ export default {
         let matrix_1_0 = newVal['matrix_1_0'] ? newVal['matrix_1_0'] : []
         let matrix_2_0 = newVal['matrix_2_0'] ? newVal['matrix_2_0'] : []
         let matrix_2_1 = newVal['matrix_2_1'] ? newVal['matrix_2_1'] : []
-        this.culForceData(
-          start.map((item) => {
-            return {
-              index: item,
-              x: ((Math.random() * this.width) / 4) * 0.7 + 50,
-              y: Math.random() * this.height * 0.7 + 50
-            }
-          })
-        ).then((res) => {
-          this.start = flatten(res)
-        })
-        this.culForceData(matrix_1_0).then((res) => {
-          this.matrix_1_0 = flatten(res)
-        })
-        this.culForceData(matrix_2_0).then((res) => {
+        // this.culForceData(
+        //   start.map((item) => {
+        //     return {
+        //       index: item,
+        //       x: ((Math.random() * this.width) / 4) * 0.7 + 50,
+        //       y: Math.random() * this.height * 0.7 + 50
+        //     }
+        //   })
+        // ).then((res) => {
+        //   this.start = flatten(res)
+        // })
+        // this.culForceData(matrix_1_0).then((res) => {
+        //   this.matrix_1_0 = flatten(res)
+        // })
+        this.culForceData([...matrix_2_0]).then((res) => {
           this.matrix_2_0 = flatten(res)
+        console.log(this.matrix_2_0)
         })
-        console.log(matrix_2_1)
-        this.culForceData(matrix_2_1).then((res) => {
-          this.matrix_2_1 = flatten(res)
-        })
+        // this.culForceData(matrix_2_1).then((res) => {
+        //   this.matrix_2_1 = flatten(res)
+        // })
       },
       deep: true
     }
@@ -219,12 +133,12 @@ export default {
       })
       const xScale_0 = d3
         .scaleLinear()
-        .domain([50, (this.width / 3) * 0.95])
-        .range([50, (this.width / 3) * 0.95])
+        .domain([50, (this.width / 3) * 0.8])
+        .range([50, (this.width / 3) * 0.8])
       const yScale_0 = d3
         .scaleLinear()
-        .domain([50, (this.height - 100) * 0.95])
-        .range([50, (this.height - 100) * 0.95])
+        .domain([50, (this.height - 100) * 0.8])
+        .range([50, (this.height - 100) * 0.8])
       return this.start.map((item) => {
         return { ...item }
       })
@@ -236,11 +150,11 @@ export default {
       const xScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
-        .range([50, (this.width / 3) * 0.95]) //this.width/3
+        .range([50, (this.width / 3) * 0.8]) //this.width/3
       const yScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
-        .range([50, (this.height - 100) * 0.95])
+        .range([50, (this.height - 100) * 0.8])
       return this.matrix_1_0.map((item) => {
         item.x = xScale_0(item.x)
         item.y = yScale_0(item.y)
@@ -249,20 +163,16 @@ export default {
     },
     matrix_2_0_data() {
       let plotNodes = this.matrix_2_0.map((item) => {
-        if (item.id == 760) {
-          item.x = 1000
-          item.y = 1000
-        }
         return [item.x, item.y]
       })
       const xScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
-        .range([50, (this.width / 3) * 0.95])
+        .range([50, (this.width / 3) * 0.8])
       const yScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
-        .range([50, (this.height / 2 - 75) * 0.95])
+        .range([50, (this.height / 2 - 75) * 0.8])
       console.log(this.matrix_2_0)
       return this.matrix_2_0.map((item) => {
         // item.x = xScale_0(item.x)
@@ -277,11 +187,11 @@ export default {
       const xScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
-        .range([50, (this.width / 3) * 0.95])
+        .range([50, (this.width / 3) * 0.8])
       const yScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
-        .range([50, (this.height / 2 - 75) * 0.95])
+        .range([50, (this.height / 2 - 75) * 0.8])
       return this.matrix_2_1.map((item) => {
         item.x = xScale_0(item.x)
         item.y = yScale_0(item.y)
@@ -292,7 +202,6 @@ export default {
   methods: {
     getFillColor(item) {
       return item.vx ? '#f00' : `url(#halfMV_${item.id})`
-      return `url(#halfMV_${item.id})`
     },
     getStrokeColor(id) {
       let node = find(this.guidanceColors, (item) => item.item === id)
@@ -306,7 +215,11 @@ export default {
       return Math.sqrt(dx * dx + dy * dy) / 10
     },
     initHierarchy() {
-      this.svg = d3.select(this.$refs.matrixView)
+      let svg = d3
+        .select(this.$refs.matrixView)
+        .attr('width', this.width)
+        .attr('height', this.height)
+      this.svg = svg
       this.svg.call(
         d3
           .zoom()
@@ -316,6 +229,7 @@ export default {
             d3.select('.gContentMatrixView').transition().duration(10).attr('transform', transform)
           })
       )
+      this.content = this.svg.append('g').attr('class', 'gContentMatrixView')
     },
     handleClick(id) {
       this.id = id
@@ -328,37 +242,66 @@ export default {
           return `${item.x}_${item.y}`
         }
       )
-      console.log(result)
-      return Promise.all(
-        keys(result).map((item) => {
-          let [width, height] = item.split('_')
-          if (result[item].length == 0) {
-            return Promise.resolve(result[item])
-          } else {
-            return new Promise((resolve, reject) => {
-              let nodes = result[item]
-              const simulation = d3
-                .forceSimulation(nodes)
-                // .force('charge', d3.forceManyBody().strength(7))
-                // .force('center', d3.forceCenter(width, height))
-                // .force('x', d3.forceX().strength(0.06)) // 吸引到 X 中心
-                // .force('y', d3.forceY().strength(0.06)) // 吸引到 Y 中心
-                .force(
-                  'collide',
-                  d3.forceCollide().radius((d) => {
-                    return 5
-                  })
-                )
-                .on('tick', ticked)
-              function ticked() {}
-              simulation.on('end', () => {
-                simulation.stop()
-                resolve(nodes)
+      console.log(result, list)
+
+      return Promise.all([
+        new Promise((resolve, reject) => {
+          let nodes = cloneDeep(list.map((item) => ({ ...item, id: item.index })))
+          const simulation = d3
+            .forceSimulation(nodes)
+            // .force(
+            //   'link',
+            //   d3.forceLink(links).id((d) => d.id)
+            // )
+            // .force('charge', d3.forceManyBody())
+            .force('x', d3.forceX(this.width / 2).strength(0.01))
+            .force('y', d3.forceY(this.height / 2).strength(0.01))
+            // .force('collide', d3.forceCollide().radius(d=>{
+            //       return d.r?d.r+1:5
+            //     }))
+          // .force('center', d3.forceCenter(this.width / 2, this.height / 2))
+
+          // const link = svg
+          //   .append('g')
+          //   .attr('stroke', '#999')
+          //   .attr('stroke-opacity', 0.6)
+          //   .selectAll()
+          //   .data(links)
+          //   .join('line')
+          //   .attr('stroke-width', (d) => Math.sqrt(d.value))
+
+          const node = this.content
+            .append('g')
+            .attr('stroke', '#fff')
+            .attr('stroke-width', 1.5)
+            .selectAll()
+            .data(nodes)
+            .join('circle')
+            .attr('r', 5)
+          // .attr('fill', (d) => color(d.group))
+          function ticked() {
+            node
+              .attr('cx', (d) => {
+                return d.x
               })
-            })
+              .attr('cy', (d) => {
+                return d.y
+              })
+
+            // links
+            //   .attr('x1', (d) => d.source.x)
+            //   .attr('y1', (d) => d.source.y)
+            //   .attr('x2', (d) => d.target.x)
+            //   .attr('y2', (d) => d.target.y)
           }
+
+          function simulationEnded() {
+            console.log('仿真已结束！')
+            resolve(nodes)
+          }
+          simulation.on('tick', ticked).on('end', simulationEnded)
         })
-      )
+      ])
     }
   }
 }
