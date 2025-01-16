@@ -151,7 +151,7 @@
           ></chart-plot>
         </div>
       </div>
-      <a-tabs>
+      <a-tabs @change='onChangeTabs'>
         <a-tab-pane key="1" tab="策略1">
           <force-guidance
             :result_edge="forceData.result_edge"
@@ -171,10 +171,20 @@
         </a-tab-pane>
         <a-tab-pane key="3" tab="策略3">
           <matrix-force-view
+            :actKey="actKey"
             :result_edge="forceData.result_edge"
+            :result_edges_2_0="forceData.result_edges_2_0"
             :result_nodes="forceData.result_nodes"
             :guidanceColors="guidanceColors"
           ></matrix-force-view>
+        </a-tab-pane>
+        <a-tab-pane key="4" tab="策略4">
+          <matrix-force-view-normal
+            :actKey="actKey"
+            :result_edge="forceData.result_edge"
+            :result_nodes="forceData.result_nodes"
+            :guidanceColors="guidanceColors"
+          ></matrix-force-view-normal>
         </a-tab-pane>
       </a-tabs>
 
@@ -213,6 +223,7 @@ import ForceGuidance from './ForceGuidance.vue'
 import HierarchyGuidance from './HierarchyGuidance.vue'
 import MatrixView from './MatrixView.vue'
 import MatrixForceView from './MatrixForceView.vue'
+import MatrixForceViewNormal from './MatrixForceViewNormal.vue'
 import { find, groupBy, values, keys } from 'lodash'
 let scale = 1
 const scaleFactor = 1.1 // 每次滚动放大的比例
@@ -224,7 +235,8 @@ export default {
     'hierarchy-guidance': HierarchyGuidance,
     'force-guidance': ForceGuidance,
     'matrix-view': MatrixView,
-    'matrix-force-view': MatrixForceView
+    'matrix-force-view': MatrixForceView,
+    'matrix-force-view-normal': MatrixForceViewNormal
   },
   data() {
     return {
@@ -286,7 +298,8 @@ export default {
         file1: [],
         file2: []
       },
-      compareVal: false
+      compareVal: false,
+      actKey:0
     }
   },
   mounted() {
@@ -294,6 +307,9 @@ export default {
   },
 
   methods: {
+    onChangeTabs(activeKey){
+      this.actKey=activeKey
+    },
     brushInit() {
       setTimeout(() => {
         this.brushList = []
@@ -472,7 +488,11 @@ export default {
         //     id: id
         //   })
         //   .then((response) => {
-        // this.forceData = response.data
+        //  this.forceData = merge(response.data,{
+        //   matrix_1_0:response.data['matrix_1_0'],
+        //   matrix_2_1:response.data['matrix_2_1'],
+        //   matrix_2_0:response.data['matrix_2_0'],
+        // })
         resolve(this.forceData)
         // })
       })

@@ -1,6 +1,6 @@
 <template>
   <div>ID: {{ id }}</div>
-  <svg style="width: 1400; height: 600" ref="matrixView">
+  <svg style="width: 1600; height: 600" ref="matrixView">
     <defs>
       <!-- 定义一个线性渐变 -->
       <linearGradient
@@ -16,9 +16,30 @@
       </linearGradient>
     </defs>
     <g class="gContentMatrixView">
-      <g style="transform: translate(0px, 50px)" v-if="false">
+      <g style="transform: translate(0px, 50px)">
         <rect
-          x="20"
+          x="10"
+          y="0"
+          width="380"
+          height="500"
+          fill="transparent"
+          stroke="black"
+          stroke-width="1"
+        />
+        <circle
+          v-for="item in matrix_2_0_data"
+          :r="item.r || 4"
+          :cx="item.x"
+          :cy="item.y"
+          :fill="getFillColor(item)"
+          @click="handleClick(item, 1)"
+          :stroke="getStrokeColor(item.id)"
+          stroke-width="1"
+        ></circle>
+      </g>
+      <g style="transform: translate(400px, 50px)">
+        <rect
+          x="10"
           y="0"
           width="380"
           height="500"
@@ -32,72 +53,51 @@
           :cx="item.x"
           :cy="item.y"
           :fill="`url(#halfMV_${item.id})`"
-          @click="handleClick(item.id)"
+          @click="handleClick(item, 1)"
           :stroke="getStrokeColor(item.id)"
           stroke-width="1"
         ></circle>
       </g>
-      <g style="transform: translate(400px, 50px)"  v-if="false">
+      <g style="transform: translate(800px, 50px)">
         <rect
-          x="20"
+          x="10"
           y="0"
-          width="400"
+          width="380"
           height="500"
           fill="transparent"
           stroke="black"
-          stroke-width="1"
+          stroke-width="0.5"
         />
         <circle
           v-for="item in matrix_1_0_data"
-          :r="4"
+          :r="item.r || 4"
           :cx="item.x"
           :cy="item.y"
           :fill="`url(#halfMV_${item.id})`"
-          @click="handleClick(item.id)"
+          @click="handleClick(item, 2)"
           :stroke="getStrokeColor(item.id)"
-          stroke-width="1"
+          stroke-width="0.5"
         ></circle>
       </g>
-      <g style="transform: translate(900px, 50px)" >
+      <g style="transform: translate(1200px, 50px)">
         <rect
-          x="0"
+          x="10"
           y="0"
-          width="400"
-          height="225"
+          width="380"
+          height="500"
           fill="transparent"
           stroke="black"
-          stroke-width="1" v-if="false"
-        />
-        <circle
-          v-for="item in matrix_2_0_data"
-          :r="4"
-          :cx="item.x"
-          :cy="item.y"
-          :fill="getFillColor(item)"
-          @click="handleClick(item.id)"
-          :stroke="getStrokeColor(item.id)"
-          stroke-width="1"
-        ></circle>
-      </g>
-      <g style="transform: translate(900px, 350px)"  v-if="false">
-        <rect
-          x="0"
-          y="0"
-          width="400"
-          height="225"
-          fill="transparent"
-          stroke="black"
-          stroke-width="1"
+          stroke-width="0.5"
         />
         <circle
           v-for="item in matrix_2_1_data"
-          :r="4"
+          :r="item.r || 4"
           :cx="item.x"
           :cy="item.y"
           :fill="getFillColor(item)"
-          @click="handleClick(item.id)"
+          @click="handleClick(item, 2)"
           :stroke="getStrokeColor(item.id)"
-          stroke-width="1"
+          stroke-width="0.5"
         ></circle>
       </g>
     </g>
@@ -132,6 +132,10 @@ export default {
       type: Array,
       default: []
     },
+    result_edges_2_0: {
+      type: Array,
+      default: []
+    },
     result_nodes: {
       type: Object,
       default: {
@@ -151,6 +155,10 @@ export default {
     brush: {
       type: Boolean,
       default: false
+    },
+    actKey:{
+      type: String,
+      default: '0'
     }
   },
   data() {
@@ -162,7 +170,6 @@ export default {
       height: 600,
       svg: null,
       actNode: '',
-      id: '',
       content: null,
       obj: {},
       hierarchyNodes: [],
@@ -172,59 +179,33 @@ export default {
       matrix_1_0: [],
       matrix_2_0: [],
       matrix_2_1: [],
-      dec: {}
+      dec: {},
+      type: 0
     }
   },
   mounted() {
-    console.log(this.$props)
     this.initHierarchy()
   },
   watch: {
     result_nodes: {
       handler(newVal, oldVal) {
-        console.log(newVal)
-        let start = newVal['start'] ? newVal['start'] : []
-        let matrix_1_0 = newVal['matrix_1_0'] ? newVal['matrix_1_0'] : []
-        let matrix_2_0 = newVal['matrix_2_0'] ? newVal['matrix_2_0'] : []
-        let matrix_2_1 = newVal['matrix_2_1'] ? newVal['matrix_2_1'] : []
-        // this.culForceData(
-        //   start.map((item) => {
-        //     return {
-        //       index: item,
-        //       x: ((Math.random() * this.width) / 4) * 0.7 + 50,
-        //       y: Math.random() * this.height * 0.7 + 50
-        //     }
-        //   })
-        // ).then((res) => {
-        //   this.start = flatten(res)
-        // })
-        // this.culForceData(matrix_1_0).then((res) => {
-        //   this.matrix_1_0 = flatten(res)
-        // })
-        this.culForceData([...matrix_2_0]).then((res) => {
-          this.matrix_2_0 = flatten(res)
+        this.start = newVal['start'] ? newVal['start'] : []
+        this.matrix_1_0 = newVal['matrix_1_0'] ? newVal['matrix_1_0'] : []
+        this.matrix_2_0 = newVal['matrix_2_0'] ? newVal['matrix_2_0'] : []
+        this.matrix_2_1 = newVal['matrix_2_1'] ? newVal['matrix_2_1'] : []
+        this.start = this.start.map((item) => {
+          return {
+            index: item,
+            x: ((Math.random() * this.width) / 4) * 0.7 + 50,
+            y: Math.random() * this.height * 0.7 + 50
+          }
         })
-        console.log(matrix_2_1)
-        // this.culForceData(matrix_2_1).then((res) => {
-        //   this.matrix_2_1 = flatten(res)
-        // })
       },
       deep: true
     }
   },
   computed: {
     start_data() {
-      let plotNodes = this.start.map((item) => {
-        return [item.x, item.y]
-      })
-      const xScale_0 = d3
-        .scaleLinear()
-        .domain([50, (this.width / 3) * 0.8])
-        .range([50, (this.width / 3) * 0.8])
-      const yScale_0 = d3
-        .scaleLinear()
-        .domain([50, (this.height - 100) * 0.8])
-        .range([50, (this.height - 100) * 0.8])
       return this.start.map((item) => {
         return { ...item }
       })
@@ -236,14 +217,23 @@ export default {
       const xScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
-        .range([50, (this.width / 3) * 0.8]) //this.width/3
+        .range([50, (this.width / 3) * 0.95])
+
       const yScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
-        .range([50, (this.height - 100) * 0.8])
+        .range([50, (this.height - 100) * 0.95])
+
+      let kx =
+        ((this.width / 3) * 0.95 - 50) /
+        (max(plotNodes.map((d) => d[0])) - min(plotNodes.map((d) => d[0])))
+      let ky =
+        ((this.height - 100) * 0.95 - 50) /
+        (max(plotNodes.map((d) => d[1])) - min(plotNodes.map((d) => d[1])))
       return this.matrix_1_0.map((item) => {
         item.x = xScale_0(item.x)
         item.y = yScale_0(item.y)
+        item.r = (item.r || 4) * min([kx, ky])
         return item
       })
     },
@@ -254,17 +244,26 @@ export default {
       const xScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
-        .range([50, (this.width / 3) * 0.8])
+        .range([50, (this.width / 3) * 0.95])
+
       const yScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
-        .range([50, (this.height / 2 - 75) * 0.8])
-      console.log(this.matrix_2_0)
-      return this.matrix_2_0.map((item) => {
-        // item.x = xScale_0(item.x)
-        // item.y = yScale_0(item.y)
+        .range([50, (this.height / 2 - 75) * 0.95])
+      let kx =
+        ((this.width / 3) * 0.95 - 50) /
+        (max(plotNodes.map((d) => d[0])) - min(plotNodes.map((d) => d[0])))
+      let ky =
+        ((this.height / 2 - 75) * 0.95 - 50) /
+        (max(plotNodes.map((d) => d[1])) - min(plotNodes.map((d) => d[1])))
+
+      let result = this.matrix_2_0.map((item) => {
+        item.x = xScale_0(item.x)
+        item.y = yScale_0(item.y)
+        item.r = (item.r || 4) * min([kx, ky])
         return item
       })
+      return result
     },
     matrix_2_1_data() {
       let plotNodes = this.matrix_2_1.map((item) => {
@@ -273,21 +272,32 @@ export default {
       const xScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
-        .range([50, (this.width / 3) * 0.8])
+        .range([50, (this.width / 3) * 0.95])
       const yScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
-        .range([50, (this.height / 2 - 75) * 0.8])
-      return this.matrix_2_1.map((item) => {
+        .range([50, (this.height / 2 - 75) * 0.95])
+
+      let kx =
+        ((this.width / 3) * 0.95 - 50) /
+        (max(plotNodes.map((d) => d[0])) - min(plotNodes.map((d) => d[0])))
+      let ky =
+        ((this.height / 2 - 75) * 0.95 - 50) /
+        (max(plotNodes.map((d) => d[1])) - min(plotNodes.map((d) => d[1])))
+
+      let result = this.matrix_2_1.map((item) => {
         item.x = xScale_0(item.x)
         item.y = yScale_0(item.y)
+        item.r = (item.r || 4) * min([kx, ky])
         return item
       })
+      return result
     }
   },
   methods: {
     getFillColor(item) {
       return item.vx ? '#f00' : `url(#halfMV_${item.id})`
+      return `url(#halfMV_${item.id})`
     },
     getStrokeColor(id) {
       let node = find(this.guidanceColors, (item) => item.item === id)
@@ -312,43 +322,35 @@ export default {
           })
       )
     },
-    handleClick(id) {
-      this.id = id
+    handleClick(item) {
+      this.id = item.id
     },
     culForceData(list) {
-
       let sf = this
-      let result = groupBy(
-        cloneDeep(list).map((item) => ({ ...item, id: item.index })),
-        (item) => {
-          return `${item.x}_${item.y}`
-        }
-      )
-      console.log(result,list)
-      return Promise.all([
-            new Promise((resolve, reject) => {
-              let nodes = cloneDeep(list.map(item=>({...item,id:item.index})))
-              const simulation = d3
-                .forceSimulation(nodes)
-                // .force('charge', d3.forceManyBody())
-                // .force('center', d3.forceCenter(600, 600))
-                // .force('x', d3.forceX().strength(0.01)) // 吸引到 X 中心
-                // .force('y', d3.forceY().strength(0.01)) // 吸引到 Y 中心 
-                .force('collide', d3.forceCollide().radius(d=>{
-                  return d.r?d.r+1:5
-                }))
-                .on('tick', ticked)
-              function ticked() {
-                //         node
-                // .attr("cx", d => d.x)
-                // .attr("cy", d => d.y);
-              }
-              simulation.on('end', () => {
-                simulation.stop()
-                resolve(nodes)
-              })
-        })]
-      )
+      return new Promise((resolve, reject) => {
+        let nodes = cloneDeep(list.map((item) => ({ ...item, id: item.index })))
+        const simulation = d3
+          .forceSimulation(nodes)
+          .velocityDecay(0.9)
+          .force(
+            'collide',
+            d3
+              .forceCollide()
+              .radius((d) => 10)
+              .iterations(0.9)
+          )
+          .force(
+            'charge',
+            d3.forceManyBody().strength((d, i) => (i ? 10 : -0.001))
+          )
+          .on('tick', ticked)
+        function ticked() {}
+        simulation.on('end', () => {
+          simulation.stop()
+          console.log(list, nodes)
+          resolve(nodes)
+        })
+      })
     }
   }
 }

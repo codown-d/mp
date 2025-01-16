@@ -1,104 +1,38 @@
 <template>
   <div>ID: {{ id }}</div>
-  <svg style="width: 1400; height: 600" ref="matrixView">
+  <svg style="width: 1600; height: 600" ref="matrixView">
     <defs>
       <!-- 定义一个线性渐变 -->
-      <linearGradient
-        :id="'halfMV_' + item.id"
-        x1="0%"
-        y1="0%"
-        x2="100%"
-        y2="0%"
-        v-for="item in guidanceColors"
-      >
+      <linearGradient :id="'halfMV_' + item.id" x1="0%" y1="0%" x2="100%" y2="0%" v-for="item in guidanceColors">
         <stop offset="50%" :style="'stop-color: ' + item.colors[0] + '; stop-opacity: 1'" />
         <stop offset="50%" :style="'stop-color: ' + item.colors[1] + '; stop-opacity: 1'" />
       </linearGradient>
     </defs>
     <g class="gContentMatrixView">
-      <g style="transform: translate(0px, 50px)" v-if="false">
-        <rect
-          x="20"
-          y="0"
-          width="380"
-          height="500"
-          fill="transparent"
-          stroke="black"
-          stroke-width="1"
-        />
-        <circle
-          v-for="item in start_data"
-          :r="4"
-          :cx="item.x"
-          :cy="item.y"
-          :fill="`url(#halfMV_${item.id})`"
-          @click="handleClick(item.id)"
-          :stroke="getStrokeColor(item.id)"
-          stroke-width="1"
-        ></circle>
+      <g>
+        <line v-for="item in link" :x1="item.x1" :y1="item.y1" :x2="item.x2" :y2="item.y2" stroke="#ddd"
+          stroke-width="0.3"></line>
       </g>
-      <g style="transform: translate(400px, 50px)" v-if="false">
-        <rect
-          x="20"
-          y="0"
-          width="400"
-          height="500"
-          fill="transparent"
-          stroke="black"
-          stroke-width="1"
-        />
-        <circle
-          v-for="item in matrix_1_0_data"
-          :r="4"
-          :cx="item.x"
-          :cy="item.y"
-          :fill="`url(#halfMV_${item.id})`"
-          @click="handleClick(item.id)"
-          :stroke="getStrokeColor(item.id)"
-          stroke-width="1"
-        ></circle>
+      <g style="transform: translate(0px, 50px)">
+        <rect x="10" y="0" width="380" height="500" fill="transparent" stroke="black" stroke-width="1" />
+        <circle v-for="item in matrix_2_0_data" :r="item.r || 4" :cx="item.x" :cy="item.y" :fill="getFillColor(item)"
+          @click="handleClick(item, 1)" :stroke="getStrokeColor(item.id)" stroke-width="1"></circle>
       </g>
-      <g style="transform: translate(900px, 50px)">
-        <rect
-          x="0"
-          y="0"
-          width="400"
-          height="225"
-          fill="transparent"
-          stroke="black"
-          stroke-width="1"
-        />
-        <circle
-          v-for="item in matrix_2_0_data"
-          :r="4"
-          :cx="item.x"
-          :cy="item.y"
-          :fill="getFillColor(item)"
-          @click="handleClick(item.id)"
-          :stroke="getStrokeColor(item.id)"
-          stroke-width="1"
-        ></circle>
+      <g style="transform: translate(400px, 50px)">
+        <rect x="10" y="0" width="380" height="500" fill="transparent" stroke="black" stroke-width="1" />
+        <circle v-for="item in start_data" :r="4" :cx="item.x" :cy="item.y" :fill="`url(#halfMV_${item.id})`"
+          @click="handleClick(item, 1)" :stroke="getStrokeColor(item.id)" stroke-width="1"></circle>
       </g>
-      <g style="transform: translate(900px, 350px)" v-if="false">
-        <rect
-          x="0"
-          y="0"
-          width="400"
-          height="225"
-          fill="transparent"
-          stroke="black"
-          stroke-width="1"
-        />
-        <circle
-          v-for="item in matrix_2_1_data"
-          :r="4"
-          :cx="item.x"
-          :cy="item.y"
-          :fill="getFillColor(item)"
-          @click="handleClick(item.id)"
-          :stroke="getStrokeColor(item.id)"
-          stroke-width="1"
-        ></circle>
+      <g style="transform: translate(800px, 50px)">
+        <rect x="10" y="0" width="380" height="500" fill="transparent" stroke="black" stroke-width="0.5" />
+        <circle v-for="item in matrix_1_0_data" :r="item.r || 4" :cx="item.x" :cy="item.y"
+          :fill="`url(#halfMV_${item.id})`" @click="handleClick(item, 2)" :stroke="getStrokeColor(item.id)"
+          stroke-width="0.5"></circle>
+      </g>
+      <g style="transform: translate(1200px, 50px)">
+        <rect x="10" y="0" width="380" height="500" fill="transparent" stroke="black" stroke-width="0.5" />
+        <circle v-for="item in matrix_2_1_data" :r="item.r || 4" :cx="item.x" :cy="item.y" :fill="getFillColor(item)"
+          @click="handleClick(item, 2)" :stroke="getStrokeColor(item.id)" stroke-width="0.5"></circle>
       </g>
     </g>
   </svg>
@@ -132,6 +66,10 @@ export default {
       type: Array,
       default: []
     },
+    result_edges_2_0: {
+      type: Array,
+      default: []
+    },
     result_nodes: {
       type: Object,
       default: {
@@ -151,6 +89,10 @@ export default {
     brush: {
       type: Boolean,
       default: false
+    },
+    actKey:{
+      type: String,
+      default: '0'
     }
   },
   data() {
@@ -162,7 +104,6 @@ export default {
       height: 600,
       svg: null,
       actNode: '',
-      id: '',
       content: null,
       obj: {},
       hierarchyNodes: [],
@@ -172,14 +113,21 @@ export default {
       matrix_1_0: [],
       matrix_2_0: [],
       matrix_2_1: [],
-      dec: {}
+      dec: {},
+      link: [],
+      type: 0
     }
   },
   mounted() {
-    console.log(this.$props)
     this.initHierarchy()
   },
   watch: {
+    actKey: {
+      handler(newVal, oldVal) {
+        this.initHierarchy()
+      },
+      deep: true
+    },
     result_nodes: {
       handler(newVal, oldVal) {
         console.log(newVal)
@@ -210,21 +158,98 @@ export default {
         })
       },
       deep: true
+    },
+    id: {
+      handler(newVal, oldVal) {
+        let arr = [...this.$props.result_edges_2_0, ...this.$props.result_edge]
+        let result = arr.filter((item) => {
+          return [item.target, item.source].includes(newVal)
+        })
+        let a = result
+          .map((item) => {
+            let { target, source } = item
+            console.log(target, source)
+            let sourceNode = { x: -100, y: -100 }
+            if (find(this.start_data, { id: target })) {
+              let node = find(this.start_data, { id: target })
+              sourceNode = {
+                x: node.x + 400,
+                y: node.y + 50
+              }
+            } else if (this.type == 1 && find(this.matrix_2_0_data, { id: target })) {
+              let node = find(this.matrix_2_0_data, { id: target })
+              sourceNode = {
+                x: node.x,
+                y: node.y + 50
+              }
+            } else if (find(this.matrix_1_0_data, { id: target })) {
+              let node = find(this.matrix_1_0_data, { id: target })
+              sourceNode = {
+                x: node.x + 800,
+                y: node.y + 50
+              }
+            } else if (this.type == 2 && find(this.matrix_2_1_data, { id: target })) {
+              let node = find(this.matrix_2_1_data, { id: target })
+              sourceNode = {
+                x: node.x + 1200,
+                y: node.y + 50
+              }
+            }
+            let targetNode = { x: -100, y: -100 }
+            if (find(this.start_data, { id: source })) {
+              let node = find(this.start_data, { id: source })
+              targetNode = {
+                x: node.x + 400,
+                y: node.y + 50
+              }
+            } else if (this.type == 1 && find(this.matrix_2_0_data, { id: source })) {
+              let node = find(this.matrix_2_0_data, { id: source })
+              targetNode = {
+                x: node.x,
+                y: node.y + 50
+              }
+            } else if (find(this.matrix_1_0_data, { id: source })) {
+              let node = find(this.matrix_1_0_data, { id: source })
+              targetNode = {
+                x: node.x + 800,
+                y: node.y + 50
+              }
+            } else if (this.type == 2 && find(this.matrix_2_1_data, { id: source })) {
+              let node = find(this.matrix_2_1_data, { id: source })
+              targetNode = {
+                x: node.x + 1200,
+                y: node.y + 50
+              }
+            }
+            return {
+              x1: sourceNode ? sourceNode.x : -100,
+              y1: sourceNode ? sourceNode.y : -100,
+              x2: targetNode ? targetNode.x : -100,
+              y2: targetNode ? targetNode.y : -100
+            }
+          })
+          .filter((item) => {
+            return item.x1 != -100 && item.y1 != -100 && item.x2 != -100 && item.y2 != -100
+          })
+        console.log(a)
+        this.link = a
+      },
+      deep: true
     }
   },
   computed: {
     start_data() {
-      let plotNodes = this.start.map((item) => {
-        return [item.x, item.y]
-      })
-      const xScale_0 = d3
-        .scaleLinear()
-        .domain([50, (this.width / 3) * 0.95])
-        .range([50, (this.width / 3) * 0.95])
-      const yScale_0 = d3
-        .scaleLinear()
-        .domain([50, (this.height - 100) * 0.95])
-        .range([50, (this.height - 100) * 0.95])
+      // let plotNodes = this.start.map((item) => {
+      //   return [item.x, item.y]
+      // })
+      // const xScale_0 = d3
+      //   .scaleLinear()
+      //   .domain([50, (this.width / 3) * 0.95])
+      //   .range([50, (this.width / 3) * 0.95])
+      // const yScale_0 = d3
+      //   .scaleLinear()
+      //   .domain([50, (this.height - 100) * 0.95])
+      //   .range([50, (this.height - 100) * 0.95])
       return this.start.map((item) => {
         return { ...item }
       })
@@ -236,39 +261,53 @@ export default {
       const xScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
-        .range([50, (this.width / 3) * 0.95]) //this.width/3
+        .range([50, (this.width / 3) * 0.95])
+
       const yScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
         .range([50, (this.height - 100) * 0.95])
+
+      let kx =
+        ((this.width / 3) * 0.95 - 50) /
+        (max(plotNodes.map((d) => d[0])) - min(plotNodes.map((d) => d[0])))
+      let ky =
+        ((this.height - 100) * 0.95 - 50) /
+        (max(plotNodes.map((d) => d[1])) - min(plotNodes.map((d) => d[1])))
       return this.matrix_1_0.map((item) => {
         item.x = xScale_0(item.x)
         item.y = yScale_0(item.y)
+        item.r = (item.r || 4) * min([kx, ky])
         return item
       })
     },
     matrix_2_0_data() {
       let plotNodes = this.matrix_2_0.map((item) => {
-        if (item.id == 760) {
-          item.x = 1000
-          item.y = 1000
-        }
         return [item.x, item.y]
       })
       const xScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[0])), max(plotNodes.map((d) => d[0]))])
         .range([50, (this.width / 3) * 0.95])
+
       const yScale_0 = d3
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
         .range([50, (this.height / 2 - 75) * 0.95])
-      console.log(this.matrix_2_0)
-      return this.matrix_2_0.map((item) => {
-        // item.x = xScale_0(item.x)
-        // item.y = yScale_0(item.y)
+      let kx =
+        ((this.width / 3) * 0.95 - 50) /
+        (max(plotNodes.map((d) => d[0])) - min(plotNodes.map((d) => d[0])))
+      let ky =
+        ((this.height / 2 - 75) * 0.95 - 50) /
+        (max(plotNodes.map((d) => d[1])) - min(plotNodes.map((d) => d[1])))
+
+      let result = this.matrix_2_0.map((item) => {
+        item.x = xScale_0(item.x)
+        item.y = yScale_0(item.y)
+        item.r = (item.r || 4) * min([kx, ky])
         return item
       })
+      return result
     },
     matrix_2_1_data() {
       let plotNodes = this.matrix_2_1.map((item) => {
@@ -282,11 +321,21 @@ export default {
         .scaleLinear()
         .domain([min(plotNodes.map((d) => d[1])), max(plotNodes.map((d) => d[1]))])
         .range([50, (this.height / 2 - 75) * 0.95])
-      return this.matrix_2_1.map((item) => {
+
+      let kx =
+        ((this.width / 3) * 0.95 - 50) /
+        (max(plotNodes.map((d) => d[0])) - min(plotNodes.map((d) => d[0])))
+      let ky =
+        ((this.height / 2 - 75) * 0.95 - 50) /
+        (max(plotNodes.map((d) => d[1])) - min(plotNodes.map((d) => d[1])))
+
+      let result = this.matrix_2_1.map((item) => {
         item.x = xScale_0(item.x)
         item.y = yScale_0(item.y)
+        item.r = (item.r || 4) * min([kx, ky])
         return item
       })
+      return result
     }
   },
   methods: {
@@ -317,48 +366,36 @@ export default {
           })
       )
     },
-    handleClick(id) {
-      this.id = id
+    handleClick(item, type) {
+      this.id = item.id
+      this.type = type
     },
     culForceData(list) {
       let sf = this
-      let result = groupBy(
-        cloneDeep(list).map((item) => ({ ...item, id: item.index })),
-        (item) => {
-          return `${item.x}_${item.y}`
-        }
-      )
-      console.log(result)
-      return Promise.all(
-        keys(result).map((item) => {
-          let [width, height] = item.split('_')
-          if (result[item].length == 0) {
-            return Promise.resolve(result[item])
-          } else {
-            return new Promise((resolve, reject) => {
-              let nodes = result[item]
-              const simulation = d3
-                .forceSimulation(nodes)
-                // .force('charge', d3.forceManyBody().strength(7))
-                // .force('center', d3.forceCenter(width, height))
-                // .force('x', d3.forceX().strength(0.06)) // 吸引到 X 中心
-                // .force('y', d3.forceY().strength(0.06)) // 吸引到 Y 中心
-                .force(
-                  'collide',
-                  d3.forceCollide().radius((d) => {
-                    return 5
-                  })
-                )
-                .on('tick', ticked)
-              function ticked() {}
-              simulation.on('end', () => {
-                simulation.stop()
-                resolve(nodes)
-              })
-            })
-          }
+      return new Promise((resolve, reject) => {
+        let nodes = cloneDeep(list.map((item) => ({ ...item, id: item.index })))
+        const simulation = d3
+          .forceSimulation(nodes)
+          .velocityDecay(0.9)
+          .force(
+            'collide',
+            d3
+              .forceCollide()
+              .radius((d) => 10)
+              .iterations(0.9)
+          )
+          .force(
+            'charge',
+            d3.forceManyBody().strength((d, i) => (i ? 10 : -0.001))
+          )
+          .on('tick', ticked)
+        function ticked() { }
+        simulation.on('end', () => {
+          simulation.stop()
+          console.log(list, nodes)
+          resolve(nodes)
         })
-      )
+      })
     }
   }
 }
