@@ -151,8 +151,8 @@
           ></chart-plot>
         </div>
       </div>
-      <a-tabs @change='onChangeTabs'>
-        <a-tab-pane key="1" tab="策略1">
+      <a-tabs>
+        <a-tab-pane key="1" tab="层间连接数量">
           <force-guidance
             :result_edge="forceData.result_edge"
             :result_nodes="forceData.result_nodes"
@@ -160,7 +160,7 @@
             :guidanceColors="guidanceColors"
           ></force-guidance>
         </a-tab-pane>
-        <a-tab-pane key="2" tab="策略2">
+        <a-tab-pane key="2" tab="预测结果">
           <hierarchy-guidance
             :dataList="hierarchyData"
             :result_edge="forceData.result_edge"
@@ -169,22 +169,36 @@
             :guidanceColors="guidanceColors"
           ></hierarchy-guidance>
         </a-tab-pane>
-        <a-tab-pane key="3" tab="策略3">
-          <matrix-force-view
-            :actKey="actKey"
-            :result_edge="forceData.result_edge"
-            :result_edges_2_0="forceData.result_edges_2_0"
-            :result_nodes="forceData.result_nodes"
-            :guidanceColors="guidanceColors"
-          ></matrix-force-view>
-        </a-tab-pane>
-        <a-tab-pane key="4" tab="策略4">
-          <matrix-force-view-normal
-            :actKey="actKey"
-            :result_edge="forceData.result_edge"
-            :result_nodes="forceData.result_nodes"
-            :guidanceColors="guidanceColors"
-          ></matrix-force-view-normal>
+        <a-tab-pane key="3" tab="相似度（原始，2_1，2_0）">
+          <div style="min-width: 1200px; overflow-x: auto">
+            <a-tabs @change="onChangeTabs">
+              <a-tab-pane key="4" tab="重叠">
+                <matrix-force-view-normal
+                  :actKey="actKey"
+                  :result_edge="forceData.result_edge"
+                  :result_nodes="forceData.result_nodes"
+                  :guidanceColors="guidanceColors"
+                ></matrix-force-view-normal
+              ></a-tab-pane>
+              <a-tab-pane key="5" tab="2阶对1阶">
+                <matrix-force-view1
+                  :actKey="actKey"
+                  :result_edge="forceData.result_edge"
+                  :result_nodes="forceData.result_nodes"
+                  :guidanceColors="guidanceColors"
+                ></matrix-force-view1
+              ></a-tab-pane>
+              <a-tab-pane key="6" tab="2阶对0阶">
+                <matrix-force-view0
+                  :actKey="actKey"
+                  :result_edge="forceData.result_edge"
+                  :result_nodes="forceData.result_nodes"
+                  :guidanceColors="guidanceColors"
+                ></matrix-force-view0
+              ></a-tab-pane>
+              
+            </a-tabs>
+          </div>
         </a-tab-pane>
       </a-tabs>
 
@@ -222,7 +236,8 @@ import ChartPlot from './ChartPlot.vue'
 import ForceGuidance from './ForceGuidance.vue'
 import HierarchyGuidance from './HierarchyGuidance.vue'
 import MatrixView from './MatrixView.vue'
-import MatrixForceView from './MatrixForceView.vue'
+import MatrixForceView1 from './MatrixForceView1.vue'
+import MatrixForceView0 from './MatrixForceView0.vue'
 import MatrixForceViewNormal from './MatrixForceViewNormal.vue'
 import { find, groupBy, values, keys } from 'lodash'
 let scale = 1
@@ -235,7 +250,8 @@ export default {
     'hierarchy-guidance': HierarchyGuidance,
     'force-guidance': ForceGuidance,
     'matrix-view': MatrixView,
-    'matrix-force-view': MatrixForceView,
+    'matrix-force-view0': MatrixForceView0,
+    'matrix-force-view1': MatrixForceView1,
     'matrix-force-view-normal': MatrixForceViewNormal
   },
   data() {
@@ -299,7 +315,7 @@ export default {
         file2: []
       },
       compareVal: false,
-      actKey:0
+      actKey: '0'
     }
   },
   mounted() {
@@ -307,8 +323,8 @@ export default {
   },
 
   methods: {
-    onChangeTabs(activeKey){
-      this.actKey=activeKey
+    onChangeTabs(activeKey) {
+      this.actKey = activeKey
     },
     brushInit() {
       setTimeout(() => {

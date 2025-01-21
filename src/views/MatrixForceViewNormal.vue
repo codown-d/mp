@@ -15,7 +15,7 @@
         <stop offset="50%" :style="'stop-color: ' + item.colors[1] + '; stop-opacity: 1'" />
       </linearGradient>
     </defs>
-    <g class="gContentMatrixView">
+    <g class="gContentMatrixViewN">
       <g style="transform: translate(0px, 50px)">
         <rect
           x="10"
@@ -156,7 +156,7 @@ export default {
       type: Boolean,
       default: false
     },
-    actKey:{
+    actKey: {
       type: String,
       default: '0'
     }
@@ -175,43 +175,56 @@ export default {
       hierarchyNodes: [],
       myChart: null,
       id: '',
-      start: [],
-      matrix_1_0: [],
-      matrix_2_0: [],
-      matrix_2_1: [],
       dec: {},
-      type: 0
+      type: 0,
+      resultNodes: {
+        start: [],
+        matrix_1_0: [],
+        matrix_2_0: [],
+        matrix_2_1: []
+      }
     }
   },
   mounted() {
     this.initHierarchy()
   },
   watch: {
+    actKey: {
+      handler(newVal, oldVal) {
+        if (newVal == 4) {
+          this.initHierarchy()
+        }
+      },
+      deep: true
+    },
     result_nodes: {
       handler(newVal, oldVal) {
-        this.start = newVal['start'] ? newVal['start'] : []
-        this.matrix_1_0 = newVal['matrix_1_0'] ? newVal['matrix_1_0'] : []
-        this.matrix_2_0 = newVal['matrix_2_0'] ? newVal['matrix_2_0'] : []
-        this.matrix_2_1 = newVal['matrix_2_1'] ? newVal['matrix_2_1'] : []
-        this.start = this.start.map((item) => {
-          return {
-            index: item,
-            x: ((Math.random() * this.width) / 4) * 0.7 + 50,
-            y: Math.random() * this.height * 0.7 + 50
-          }
-        })
+        let { start = [], matrix_1_0 = [], matrix_2_0 = [], matrix_2_1 = [] } = newVal
+        this.resultNodes = {
+          start: start.map((item) => {
+            return {
+              index: item,
+              x: ((Math.random() * this.width) / 4) * 0.7 + 50,
+              y: Math.random() * this.height * 0.7 + 50
+            }
+          }),
+          matrix_1_0,
+          matrix_2_0,
+          matrix_2_1
+        }
       },
       deep: true
     }
   },
   computed: {
     start_data() {
-      return this.start.map((item) => {
+      return this.resultNodes.start.map((item) => {
         return { ...item }
       })
     },
     matrix_1_0_data() {
-      let plotNodes = this.matrix_1_0.map((item) => {
+      let matrix_1_0 = cloneDeep(this.resultNodes.matrix_1_0)
+      let plotNodes = matrix_1_0.map((item) => {
         return [item.x, item.y]
       })
       const xScale_0 = d3
@@ -230,7 +243,7 @@ export default {
       let ky =
         ((this.height - 100) * 0.95 - 50) /
         (max(plotNodes.map((d) => d[1])) - min(plotNodes.map((d) => d[1])))
-      return this.matrix_1_0.map((item) => {
+      return matrix_1_0.map((item) => {
         item.x = xScale_0(item.x)
         item.y = yScale_0(item.y)
         item.r = (item.r || 4) * min([kx, ky])
@@ -238,7 +251,8 @@ export default {
       })
     },
     matrix_2_0_data() {
-      let plotNodes = this.matrix_2_0.map((item) => {
+      let matrix_2_0 = cloneDeep(this.resultNodes.matrix_2_0)
+      let plotNodes =matrix_2_0.map((item) => {
         return [item.x, item.y]
       })
       const xScale_0 = d3
@@ -257,7 +271,7 @@ export default {
         ((this.height / 2 - 75) * 0.95 - 50) /
         (max(plotNodes.map((d) => d[1])) - min(plotNodes.map((d) => d[1])))
 
-      let result = this.matrix_2_0.map((item) => {
+      let result = matrix_2_0.map((item) => {
         item.x = xScale_0(item.x)
         item.y = yScale_0(item.y)
         item.r = (item.r || 4) * min([kx, ky])
@@ -266,7 +280,8 @@ export default {
       return result
     },
     matrix_2_1_data() {
-      let plotNodes = this.matrix_2_1.map((item) => {
+      let matrix_2_1 = cloneDeep(this.resultNodes.matrix_2_1)
+      let plotNodes = matrix_2_1.map((item) => {
         return [item.x, item.y]
       })
       const xScale_0 = d3
@@ -285,7 +300,7 @@ export default {
         ((this.height / 2 - 75) * 0.95 - 50) /
         (max(plotNodes.map((d) => d[1])) - min(plotNodes.map((d) => d[1])))
 
-      let result = this.matrix_2_1.map((item) => {
+      let result =matrix_2_1.map((item) => {
         item.x = xScale_0(item.x)
         item.y = yScale_0(item.y)
         item.r = (item.r || 4) * min([kx, ky])
@@ -311,6 +326,24 @@ export default {
       return Math.sqrt(dx * dx + dy * dy) / 10
     },
     initHierarchy() {
+      let {
+        start = [],
+        matrix_1_0 = [],
+        matrix_2_0 = [],
+        matrix_2_1 = []
+      } = this.$props.result_nodes
+      this.resultNodes = {
+        start: start.map((item) => {
+          return {
+            index: item,
+            x: ((Math.random() * this.width) / 4) * 0.7 + 50,
+            y: Math.random() * this.height * 0.7 + 50
+          }
+        }),
+        matrix_1_0,
+        matrix_2_0,
+        matrix_2_1
+      }
       this.svg = d3.select(this.$refs.matrixView)
       this.svg.call(
         d3
@@ -318,40 +351,13 @@ export default {
           .scaleExtent([0.1, 4])
           .on('zoom', (event) => {
             let { transform } = event
-            d3.select('.gContentMatrixView').transition().duration(10).attr('transform', transform)
+            d3.select('.gContentMatrixViewN').transition().duration(10).attr('transform', transform)
           })
       )
     },
     handleClick(item) {
       this.id = item.id
     },
-    culForceData(list) {
-      let sf = this
-      return new Promise((resolve, reject) => {
-        let nodes = cloneDeep(list.map((item) => ({ ...item, id: item.index })))
-        const simulation = d3
-          .forceSimulation(nodes)
-          .velocityDecay(0.9)
-          .force(
-            'collide',
-            d3
-              .forceCollide()
-              .radius((d) => 10)
-              .iterations(0.9)
-          )
-          .force(
-            'charge',
-            d3.forceManyBody().strength((d, i) => (i ? 10 : -0.001))
-          )
-          .on('tick', ticked)
-        function ticked() {}
-        simulation.on('end', () => {
-          simulation.stop()
-          console.log(list, nodes)
-          resolve(nodes)
-        })
-      })
-    }
   }
 }
 </script>
